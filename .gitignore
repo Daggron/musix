@@ -1,0 +1,33 @@
+node_modules/
+.DS_Store
+*.log
+
+# React Native
+app/ios/Pods/
+app/ios/build/
+app/android/.gradle/
+app/android/app/build/
+app/android/build/
+
+# Native builds
+packages/audio-engine/build/
+*.o
+*.a
+*.dylib
+*.so
+
+# IDE
+.idea/
+.vscode/
+*.xcworkspace
+*.xcuserdata
+
+# Environment
+.env
+.env.*
+
+# Metro
+.metro-health-check*
+
+# Claude Code local settings
+.claude/settings.local.json
