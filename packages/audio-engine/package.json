@@ -1,0 +1,11 @@
+{
+  "name": "@musix/audio-engine",
+  "version": "0.0.1",
+  "private": true,
+  "main": "js/index.ts",
+  "types": "js/index.ts",
+  "files": [
+    "js",
+    "src"
+  ]
+}

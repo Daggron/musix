@@ -1,0 +1,8 @@
+packages:
+  - "app"
+  - "packages/*"
+allowBuilds:
+  '@shopify/react-native-skia': true
+minimumReleaseAgeExclude:
+  - zustand@5.0.14
+  - react-native-screens@4.26.0-nightly-20260527-d42a494b4

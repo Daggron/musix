@@ -1,0 +1,10 @@
+{
+  "extends": "@react-native/typescript-config/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@musix/audio-engine": ["../packages/audio-engine/js"]
+    }
+  },
+  "include": [".", "../packages/audio-engine/js"]
+}

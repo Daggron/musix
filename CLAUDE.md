@@ -16,11 +16,21 @@ Audiophile-grade lossless music player for iOS 16+ and Android 10+. React Native
 
 ## Stack
 
+- **Package manager:** pnpm 11 with `pnpm-workspace.yaml`
+- **React Native:** 0.79 (New Architecture)
 - **State:** Zustand stores (Player, Library, Playlist, Theme)
-- **Persistence:** OP-SQLite for library/playlists, MMKV for preferences/resume state
+- **Persistence:** OP-SQLite for library/playlists, MMKV v2 for preferences/resume state
 - **Animation:** Reanimated 3 for vinyl, Skia for cassette — never render both simultaneously
 - **Audio:** C++ core (TagLib, FLAC decoder, parametric EQ, gain stage) → Oboe (Android) / AVAudioEngine (iOS)
-- **Navigation:** React Navigation (bottom tabs + modal stack)
+- **Navigation:** React Navigation 7 (bottom tabs + modal stack)
+
+## Commands
+
+- `pnpm install` — install all workspace dependencies (run from repo root)
+- `cd app && npx react-native run-ios` — build and run on iOS simulator
+- `cd app && npx react-native run-android` — build and run on Android emulator
+- `cd app && npx tsc --noEmit` — type check
+- `cd app && npx jest` — run tests
 
 ## Conventions
 
