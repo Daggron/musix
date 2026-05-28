@@ -21,6 +21,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)clearTrackEnded;
 - (BOOL)hasTrackTransitioned;
 - (void)clearTrackTransitioned;
+- (BOOL)wasInterrupted;
+- (void)clearInterrupted;
 
 @end
 

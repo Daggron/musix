@@ -9,6 +9,8 @@
   AVAudioEngine *_engine;
   AVAudioSourceNode *_sourceNode;
   musix::AudioPlayer _player;
+  BOOL _interrupted;
+  BOOL _playingBeforeInterruption;
 }
 
 + (instancetype)shared {
@@ -23,10 +25,17 @@
 - (instancetype)init {
   self = [super init];
   if (self) {
+    _interrupted = NO;
+    _playingBeforeInterruption = NO;
     [self configureAudioSession];
     [self setupEngine];
+    [self observeNotifications];
   }
   return self;
+}
+
+- (void)dealloc {
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)configureAudioSession {
@@ -179,6 +188,68 @@
 
 - (void)clearTrackTransitioned {
   _player.clearTrackTransitioned();
+}
+
+- (BOOL)wasInterrupted {
+  return _interrupted;
+}
+
+- (void)clearInterrupted {
+  _interrupted = NO;
+}
+
+#pragma mark - Audio Session Notifications
+
+- (void)observeNotifications {
+  NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+  [nc addObserver:self
+         selector:@selector(handleInterruption:)
+             name:AVAudioSessionInterruptionNotification
+           object:nil];
+  [nc addObserver:self
+         selector:@selector(handleRouteChange:)
+             name:AVAudioSessionRouteChangeNotification
+           object:nil];
+}
+
+- (void)handleInterruption:(NSNotification *)notification {
+  NSDictionary *info = notification.userInfo;
+  AVAudioSessionInterruptionType type =
+      (AVAudioSessionInterruptionType)[info[AVAudioSessionInterruptionTypeKey] unsignedIntegerValue];
+
+  if (type == AVAudioSessionInterruptionTypeBegan) {
+    _playingBeforeInterruption = _player.isPlaying();
+    if (_playingBeforeInterruption) {
+      _player.pause();
+      _interrupted = YES;
+    }
+  } else if (type == AVAudioSessionInterruptionTypeEnded) {
+    AVAudioSessionInterruptionOptions options =
+        (AVAudioSessionInterruptionOptions)[info[AVAudioSessionInterruptionOptionKey] unsignedIntegerValue];
+    if (_playingBeforeInterruption &&
+        (options & AVAudioSessionInterruptionOptionShouldResume)) {
+      NSError *error = nil;
+      [[AVAudioSession sharedInstance] setActive:YES error:&error];
+      if (!_engine.isRunning) {
+        [_engine startAndReturnError:&error];
+      }
+      _player.play();
+      _interrupted = NO;
+    }
+  }
+}
+
+- (void)handleRouteChange:(NSNotification *)notification {
+  NSDictionary *info = notification.userInfo;
+  AVAudioSessionRouteChangeReason reason =
+      (AVAudioSessionRouteChangeReason)[info[AVAudioSessionRouteChangeReasonKey] unsignedIntegerValue];
+
+  if (reason == AVAudioSessionRouteChangeReasonOldDeviceUnavailable) {
+    if (_player.isPlaying()) {
+      _player.pause();
+      _interrupted = YES;
+    }
+  }
 }
 
 @end

@@ -27,6 +27,8 @@ export interface PlayerModule {
   clearTrackEnded(): void;
   hasTrackTransitioned(): boolean;
   clearTrackTransitioned(): void;
+  wasInterrupted(): boolean;
+  clearInterrupted(): void;
 }
 
 export interface ScannerModule {

@@ -67,6 +67,14 @@ RCT_EXPORT_MODULE(MusixPlayerModule)
   [[MusixAudioEngine shared] clearTrackTransitioned];
 }
 
+- (NSNumber *)wasInterrupted {
+  return @([[MusixAudioEngine shared] wasInterrupted]);
+}
+
+- (void)clearInterrupted {
+  [[MusixAudioEngine shared] clearInterrupted];
+}
+
 - (NSString *)getDocumentsPath {
   NSArray *paths = NSSearchPathForDirectoriesInDomains(
       NSDocumentDirectory, NSUserDomainMask, YES);

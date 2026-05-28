@@ -15,6 +15,8 @@ export interface Spec extends TurboModule {
   clearTrackEnded(): void;
   hasTrackTransitioned(): boolean;
   clearTrackTransitioned(): void;
+  wasInterrupted(): boolean;
+  clearInterrupted(): void;
   getDocumentsPath(): string;
 }
 

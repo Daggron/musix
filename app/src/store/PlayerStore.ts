@@ -140,6 +140,14 @@ function startSync(get: () => PlayerState): void {
       return;
     }
 
+    if (PlayerModule.wasInterrupted()) {
+      PlayerModule.clearInterrupted();
+      stopSync();
+      usePlayerStore.setState({isPlaying: false});
+      saveResume(usePlayerStore.getState());
+      return;
+    }
+
     usePlayerStore.setState({positionMs, durationMs});
   }, 250);
 }

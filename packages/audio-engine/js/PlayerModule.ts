@@ -70,6 +70,14 @@ const playerModule: PlayerModule = {
   clearTrackTransitioned(): void {
     native?.clearTrackTransitioned();
   },
+
+  wasInterrupted(): boolean {
+    return native?.wasInterrupted() ?? false;
+  },
+
+  clearInterrupted(): void {
+    native?.clearInterrupted();
+  },
 };
 
 export default playerModule;
