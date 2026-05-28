@@ -1,0 +1,21 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "src/assets/fonts/DMSans-Variable.ttf",
+      "sha1": "7e47b9a429a493edc94b4e12fd1a8f0122e4a196"
+    },
+    {
+      "path": "src/assets/fonts/InstrumentSerif-Italic.ttf",
+      "sha1": "cfeb4692b8c04348aa63861d0796024af37b85dc"
+    },
+    {
+      "path": "src/assets/fonts/InstrumentSerif-Regular.ttf",
+      "sha1": "760dce2e432fb3711579d4de1cf5319ecaf28c7f"
+    },
+    {
+      "path": "src/assets/fonts/JetBrainsMono-Variable.ttf",
+      "sha1": "bef242b36d905170007caed53cd6a07775dbfb82"
+    }
+  ]
+}

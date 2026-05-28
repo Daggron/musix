@@ -1,71 +1,93 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {CustomTabBar} from './src/components';
+import {SongsScreen} from './src/screens/SongsScreen';
+import {SearchScreen} from './src/screens/SearchScreen';
+import {PlaylistsScreen} from './src/screens/PlaylistsScreen';
+import {PlaylistDetailScreen} from './src/screens/PlaylistDetailScreen';
+import {NowPlayingScreen} from './src/screens/NowPlayingScreen';
+import {EqualizerScreen} from './src/screens/EqualizerScreen';
+import {AddMusicScreen} from './src/screens/AddMusicScreen';
 
-function SongsScreen(): React.JSX.Element {
-  return (
-    <View style={styles.screen}>
-      <Text style={styles.title}>Songs</Text>
-    </View>
-  );
-}
+type PlaylistsStackParams = {
+  PlaylistsList: undefined;
+  PlaylistDetail: {playlistId: string};
+};
 
-function SearchScreen(): React.JSX.Element {
-  return (
-    <View style={styles.screen}>
-      <Text style={styles.title}>Search</Text>
-    </View>
-  );
-}
+const PlaylistsStack = createNativeStackNavigator<PlaylistsStackParams>();
 
-function PlaylistsScreen(): React.JSX.Element {
+function PlaylistsStackScreen() {
   return (
-    <View style={styles.screen}>
-      <Text style={styles.title}>Playlists</Text>
-    </View>
+    <PlaylistsStack.Navigator screenOptions={{headerShown: false}}>
+      <PlaylistsStack.Screen name="PlaylistsList" component={PlaylistsScreen} />
+      <PlaylistsStack.Screen
+        name="PlaylistDetail"
+        component={PlaylistDetailScreen}
+      />
+    </PlaylistsStack.Navigator>
   );
 }
 
 const Tab = createBottomTabNavigator();
 
+type RootStackParams = {
+  Main: undefined;
+  NowPlaying: undefined;
+  Equalizer: undefined;
+  AddMusic: undefined;
+};
+
+const RootStack = createNativeStackNavigator<RootStackParams>();
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{headerShown: false}}>
+      <Tab.Screen name="Songs" component={SongsScreen} />
+      <Tab.Screen name="Search" component={SearchScreen} />
+      <Tab.Screen name="Playlists" component={PlaylistsStackScreen} />
+    </Tab.Navigator>
+  );
+}
+
 function App(): React.JSX.Element {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <Tab.Navigator
-          screenOptions={{
-            headerShown: false,
-            tabBarStyle: {
-              backgroundColor: '#f1e6cf',
-              borderTopColor: 'rgba(42, 30, 20, 0.12)',
-            },
-            tabBarActiveTintColor: '#8a2e1f',
-            tabBarInactiveTintColor: '#7a5d44',
-            tabBarLabelStyle: {fontSize: 10, letterSpacing: 1},
-          }}>
-          <Tab.Screen name="Songs" component={SongsScreen} />
-          <Tab.Screen name="Search" component={SearchScreen} />
-          <Tab.Screen name="Playlists" component={PlaylistsScreen} />
-        </Tab.Navigator>
+        <RootStack.Navigator screenOptions={{headerShown: false}}>
+          <RootStack.Screen name="Main" component={MainTabs} />
+          <RootStack.Screen
+            name="NowPlaying"
+            component={NowPlayingScreen}
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+          <RootStack.Screen
+            name="Equalizer"
+            component={EqualizerScreen}
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+          <RootStack.Screen
+            name="AddMusic"
+            component={AddMusicScreen}
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+        </RootStack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f1e6cf',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#2a1e14',
-  },
-});
 
 export default App;
