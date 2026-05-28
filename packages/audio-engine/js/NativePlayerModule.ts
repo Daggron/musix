@@ -3,6 +3,7 @@ import {TurboModuleRegistry} from 'react-native';
 
 export interface Spec extends TurboModule {
   loadTrack(filePath: string): Promise<boolean>;
+  preloadNext(filePath: string): Promise<boolean>;
   play(): void;
   pause(): void;
   stop(): void;

@@ -71,6 +71,31 @@ function shuffleArray<T>(arr: T[]): T[] {
   return copy;
 }
 
+function preloadNextInQueue(queue: string[], queueIndex: number, repeat: RepeatMode, shuffle: boolean): void {
+  if (queue.length <= 1) return;
+
+  let nextIdx: number;
+  if (repeat === 'one') {
+    nextIdx = queueIndex;
+  } else if (shuffle) {
+    nextIdx = Math.floor(Math.random() * queue.length);
+  } else {
+    nextIdx = queueIndex + 1;
+    if (nextIdx >= queue.length) {
+      if (repeat === 'all') {
+        nextIdx = 0;
+      } else {
+        return;
+      }
+    }
+  }
+
+  const nextTrack = getTrackById(queue[nextIdx]);
+  if (nextTrack?.filePath) {
+    PlayerModule.preloadNext(nextTrack.filePath).catch(() => {});
+  }
+}
+
 export const usePlayerStore = create<PlayerState>((set, get) => {
   const persist = () => saveResume(get());
 
@@ -121,7 +146,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
       if (track.filePath) {
         PlayerModule.loadTrack(track.filePath)
-          .then(() => PlayerModule.play())
+          .then(() => {
+            PlayerModule.play();
+            const s = get();
+            preloadNextInQueue(s.queue, s.queueIndex, s.repeat, s.shuffle);
+          })
           .catch(() => set({isPlaying: false}));
       }
     },
@@ -164,7 +193,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         persist();
         if (track.filePath) {
           PlayerModule.loadTrack(track.filePath)
-            .then(() => PlayerModule.play())
+            .then(() => {
+              PlayerModule.play();
+              preloadNextInQueue(queue, nextIndex, repeat, isShuffle);
+            })
             .catch(() => set({isPlaying: false}));
         }
       }
@@ -186,8 +218,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         set({currentTrack: track, queueIndex: prevIndex, positionMs: 0});
         persist();
         if (track.filePath) {
+          const {repeat: r, shuffle: sh} = get();
           PlayerModule.loadTrack(track.filePath)
-            .then(() => PlayerModule.play())
+            .then(() => {
+              PlayerModule.play();
+              preloadNextInQueue(queue, prevIndex, r, sh);
+            })
             .catch(() => set({isPlaying: false}));
         }
       }

@@ -1,41 +1,49 @@
 #include "AudioPlayer.h"
-#include <algorithm>
 #include <cstring>
 
 namespace musix {
 
-static constexpr uint32_t kDecodeChunkFrames = 1024;
-
 AudioPlayer::AudioPlayer() = default;
 
-AudioPlayer::~AudioPlayer() {
-  stop();
-  stopDecodeThread();
-}
+AudioPlayer::~AudioPlayer() { stop(); }
 
 bool AudioPlayer::loadTrack(const std::string &filePath) {
   stop();
-  stopDecodeThread();
 
-  if (!decoder_.open(filePath)) {
+  auto buf = std::make_unique<TrackBuffer>();
+  if (!buf->open(filePath)) {
     return false;
   }
 
-  trackLoaded_.store(true);
+  buf->startThread();
+  current_ = std::move(buf);
+  framesConsumed_.store(0);
   trackEnded_.store(false);
-  framesRead_.store(0);
-  seekRequested_.store(false);
+  trackTransitioned_.store(false);
+  return true;
+}
 
-  rebuildRingBuffer();
-  startDecodeThread();
+bool AudioPlayer::preloadNext(const std::string &filePath) {
+  auto buf = std::make_unique<TrackBuffer>();
+  if (!buf->open(filePath)) {
+    return false;
+  }
+
+  buf->startThread();
+
+  std::lock_guard<std::mutex> lock(nextMutex_);
+  if (next_) {
+    next_->close();
+  }
+  next_ = std::move(buf);
   return true;
 }
 
 void AudioPlayer::play() {
-  if (!trackLoaded_.load())
+  if (!current_)
     return;
   playing_.store(true, std::memory_order_release);
-  decodeCv_.notify_one();
+  current_->cv.notify_one();
 }
 
 void AudioPlayer::pause() {
@@ -44,103 +52,84 @@ void AudioPlayer::pause() {
 
 void AudioPlayer::stop() {
   playing_.store(false, std::memory_order_release);
-  stopDecodeThread();
 
-  if (ring_) {
-    ring_->reset();
+  if (current_) {
+    current_->close();
+    current_.reset();
   }
-  decoder_.close();
-  trackLoaded_.store(false);
+
+  {
+    std::lock_guard<std::mutex> lock(nextMutex_);
+    if (next_) {
+      next_->close();
+      next_.reset();
+    }
+  }
+
   trackEnded_.store(false);
-  framesRead_.store(0);
+  trackTransitioned_.store(false);
+  framesConsumed_.store(0);
 }
 
 bool AudioPlayer::seekToMs(double positionMs) {
-  if (!trackLoaded_.load())
+  if (!current_ || !current_->decoder.isOpen())
     return false;
 
-  uint64_t targetFrame =
-      static_cast<uint64_t>(positionMs / 1000.0 *
-                            static_cast<double>(decoder_.sampleRate()));
-  seekTargetFrame_.store(targetFrame);
-  seekRequested_.store(true, std::memory_order_release);
-  decodeCv_.notify_one();
+  uint64_t targetFrame = static_cast<uint64_t>(
+      positionMs / 1000.0 *
+      static_cast<double>(current_->decoder.sampleRate()));
+  current_->seekTarget.store(targetFrame);
+  current_->seekRequested.store(true, std::memory_order_release);
+  current_->cv.notify_one();
+
+  framesConsumed_.store(targetFrame);
   return true;
 }
 
 uint32_t AudioPlayer::pullAudio(float *buffer, uint32_t frames) {
-  if (!ring_ || !playing_.load(std::memory_order_acquire)) {
+  if (!current_ || !playing_.load(std::memory_order_acquire)) {
     return 0;
   }
 
-  uint32_t read = ring_->read(buffer, frames);
+  uint32_t totalRead = 0;
 
-  if (read == 0 && trackEnded_.load(std::memory_order_acquire)) {
-    playing_.store(false, std::memory_order_release);
+  // Read from current track
+  if (current_->ring) {
+    totalRead = current_->ring->read(buffer, frames);
+    framesConsumed_.fetch_add(totalRead, std::memory_order_relaxed);
   }
 
-  return read;
-}
+  // If current buffer drained and track is at EOF, attempt gapless swap
+  if (totalRead < frames &&
+      current_->eof.load(std::memory_order_acquire)) {
 
-void AudioPlayer::rebuildRingBuffer() {
-  uint32_t ch = decoder_.channels();
-  if (ch == 0)
-    ch = 2;
-  ring_ = std::make_unique<RingBuffer>(kRingBufferFrames, ch);
-}
+    std::unique_lock<std::mutex> lock(nextMutex_, std::try_to_lock);
+    if (lock.owns_lock() && next_) {
+      // Swap next → current
+      current_->close();
+      current_ = std::move(next_);
+      framesConsumed_.store(0);
+      trackTransitioned_.store(true, std::memory_order_release);
 
-void AudioPlayer::startDecodeThread() {
-  threadRunning_.store(true);
-  decodeThread_ = std::thread([this] { decodeThreadLoop(); });
-}
-
-void AudioPlayer::stopDecodeThread() {
-  threadRunning_.store(false, std::memory_order_release);
-  decodeCv_.notify_one();
-  if (decodeThread_.joinable()) {
-    decodeThread_.join();
-  }
-}
-
-void AudioPlayer::decodeThreadLoop() {
-  std::vector<float> chunk(kDecodeChunkFrames * decoder_.channels());
-
-  while (threadRunning_.load(std::memory_order_acquire)) {
-    // Handle seek request
-    if (seekRequested_.exchange(false, std::memory_order_acq_rel)) {
-      uint64_t target = seekTargetFrame_.load(std::memory_order_relaxed);
-      decoder_.seekToFrame(target);
-      ring_->reset();
-      framesRead_.store(target, std::memory_order_relaxed);
-      trackEnded_.store(false);
-    }
-
-    // Fill ring buffer
-    if (ring_->availableWrite() >= kDecodeChunkFrames) {
-      uint64_t decoded =
-          decoder_.readFrames(chunk.data(), kDecodeChunkFrames);
-
-      if (decoded > 0) {
-        ring_->write(chunk.data(), static_cast<uint32_t>(decoded));
+      // Fill remainder from new current track
+      if (current_->ring) {
+        uint32_t remaining = frames - totalRead;
+        uint32_t extra =
+            current_->ring->read(buffer + totalRead * current_->decoder.channels(),
+                                 remaining);
+        framesConsumed_.fetch_add(extra, std::memory_order_relaxed);
+        totalRead += extra;
       }
-
-      if (decoded < kDecodeChunkFrames) {
+    } else if (!next_) {
+      // No next track — track ended
+      if (totalRead == 0) {
+        playing_.store(false, std::memory_order_release);
         trackEnded_.store(true, std::memory_order_release);
       }
-
-      if (decoded > 0) {
-        continue;
-      }
     }
-
-    // Sleep until woken: buffer has space or state changed
-    std::unique_lock<std::mutex> lock(decodeMutex_);
-    decodeCv_.wait_for(lock, std::chrono::milliseconds(10), [this] {
-      return !threadRunning_.load(std::memory_order_acquire) ||
-             seekRequested_.load(std::memory_order_acquire) ||
-             (ring_ && ring_->availableWrite() >= kDecodeChunkFrames);
-    });
   }
+
+  return totalRead;
 }
 
 } // namespace musix

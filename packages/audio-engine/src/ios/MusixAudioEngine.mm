@@ -55,6 +55,10 @@
   return YES;
 }
 
+- (BOOL)preloadNext:(NSString *)filePath {
+  return _player.preloadNext(std::string([filePath UTF8String]));
+}
+
 - (void)rebuildSourceNode {
   if (_sourceNode) {
     [_engine disconnectNodeOutput:_sourceNode];
@@ -177,6 +181,11 @@
                                  __strong MusixAudioEngine *s = weakSelf;
                                  if (!s)
                                    return;
+                                 if (s->_player.hasTrackTransitioned()) {
+                                   s->_player.clearTrackTransitioned();
+                                   if (s.onTrackTransition)
+                                     s.onTrackTransition();
+                                 }
                                  if (s->_player.hasTrackEnded()) {
                                    s->_player.clearTrackEnded();
                                    [s stopPositionTimer];

@@ -21,8 +21,10 @@ const playerModule: PlayerModule = {
     }
   },
 
-  async preloadNext(_filePath: string): Promise<void> {
-    // Phase 3.2: gapless pre-buffer
+  async preloadNext(filePath: string): Promise<void> {
+    if (native) {
+      await native.preloadNext(filePath);
+    }
   },
 
   play(): void {

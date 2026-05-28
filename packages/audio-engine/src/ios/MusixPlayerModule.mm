@@ -16,6 +16,13 @@ RCT_EXPORT_MODULE(MusixPlayerModule)
   resolve(@(success));
 }
 
+- (void)preloadNext:(NSString *)filePath
+            resolve:(RCTPromiseResolveBlock)resolve
+             reject:(RCTPromiseRejectBlock)reject {
+  BOOL success = [[MusixAudioEngine shared] preloadNext:filePath];
+  resolve(@(success));
+}
+
 - (void)play {
   [[MusixAudioEngine shared] play];
 }
