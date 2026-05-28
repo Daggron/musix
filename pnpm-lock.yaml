@@ -10,6 +10,9 @@ importers:
 
   app:
     dependencies:
+      '@musix/audio-engine':
+        specifier: workspace:*
+        version: link:../packages/audio-engine
       '@op-engineering/op-sqlite':
         specifier: ^16.2.0
         version: 16.2.0(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0)
@@ -108,7 +111,14 @@ importers:
         specifier: 5.0.4
         version: 5.0.4
 
-  packages/audio-engine: {}
+  packages/audio-engine:
+    dependencies:
+      react:
+        specifier: '*'
+        version: 19.0.0
+      react-native:
+        specifier: '*'
+        version: 0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0)(@types/react@19.2.15)(react@19.0.0)
 
 packages:
 
@@ -5108,7 +5118,7 @@ snapshots:
       nullthrows: 1.1.1
       yargs: 17.7.2
 
-  '@react-native/community-cli-plugin@0.79.2(@react-native-community/cli@18.0.0(typescript@5.0.4))':
+  '@react-native/community-cli-plugin@0.79.2(@react-native-community/cli@18.0.0)':
     dependencies:
       '@react-native/dev-middleware': 0.79.2
       chalk: 4.1.2
@@ -5201,6 +5211,15 @@ snapshots:
       nullthrows: 1.1.1
       react: 19.0.0
       react-native: 0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0)
+    optionalDependencies:
+      '@types/react': 19.2.15
+
+  '@react-native/virtualized-lists@0.79.2(@types/react@19.2.15)(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0)(@types/react@19.2.15)(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      invariant: 2.2.4
+      nullthrows: 1.1.1
+      react: 19.0.0
+      react-native: 0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0)(@types/react@19.2.15)(react@19.0.0)
     optionalDependencies:
       '@types/react': 19.2.15
 
@@ -7859,11 +7878,59 @@ snapshots:
       '@jest/create-cache-key-function': 29.7.0
       '@react-native/assets-registry': 0.79.2
       '@react-native/codegen': 0.79.2(@babel/core@7.29.7)
-      '@react-native/community-cli-plugin': 0.79.2(@react-native-community/cli@18.0.0(typescript@5.0.4))
+      '@react-native/community-cli-plugin': 0.79.2(@react-native-community/cli@18.0.0)
       '@react-native/gradle-plugin': 0.79.2
       '@react-native/js-polyfills': 0.79.2
       '@react-native/normalize-colors': 0.79.2
       '@react-native/virtualized-lists': 0.79.2(@types/react@19.2.15)(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0)
+      abort-controller: 3.0.0
+      anser: 1.4.10
+      ansi-regex: 5.0.1
+      babel-jest: 29.7.0(@babel/core@7.29.7)
+      babel-plugin-syntax-hermes-parser: 0.25.1
+      base64-js: 1.5.1
+      chalk: 4.1.2
+      commander: 12.1.0
+      event-target-shim: 5.0.1
+      flow-enums-runtime: 0.0.6
+      glob: 7.2.3
+      invariant: 2.2.4
+      jest-environment-node: 29.7.0
+      memoize-one: 5.2.1
+      metro-runtime: 0.82.5
+      metro-source-map: 0.82.5
+      nullthrows: 1.1.1
+      pretty-format: 29.7.0
+      promise: 8.3.0
+      react: 19.0.0
+      react-devtools-core: 6.1.5
+      react-refresh: 0.14.2
+      regenerator-runtime: 0.13.11
+      scheduler: 0.25.0
+      semver: 7.8.1
+      stacktrace-parser: 0.1.11
+      whatwg-fetch: 3.6.20
+      ws: 6.2.4
+      yargs: 17.7.2
+    optionalDependencies:
+      '@types/react': 19.2.15
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@react-native-community/cli'
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0)(@types/react@19.2.15)(react@19.0.0):
+    dependencies:
+      '@jest/create-cache-key-function': 29.7.0
+      '@react-native/assets-registry': 0.79.2
+      '@react-native/codegen': 0.79.2(@babel/core@7.29.7)
+      '@react-native/community-cli-plugin': 0.79.2(@react-native-community/cli@18.0.0)
+      '@react-native/gradle-plugin': 0.79.2
+      '@react-native/js-polyfills': 0.79.2
+      '@react-native/normalize-colors': 0.79.2
+      '@react-native/virtualized-lists': 0.79.2(@types/react@19.2.15)(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0)(@types/react@19.2.15)(react@19.0.0))(react@19.0.0)
       abort-controller: 3.0.0
       anser: 1.4.10
       ansi-regex: 5.0.1

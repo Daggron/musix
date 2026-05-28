@@ -1,21 +1,57 @@
-import type { PlayerModule } from './types';
+import {Platform, TurboModuleRegistry} from 'react-native';
+import type {PlayerModule} from './types';
 
-const stub: PlayerModule = {
-  async loadTrack(_filePath: string): Promise<void> {},
-  async preloadNext(_filePath: string): Promise<void> {},
-  play(): void {},
-  pause(): void {},
-  stop(): void {},
-  seekToFrame(_positionMs: number): void {},
+function getNativeModule() {
+  try {
+    return TurboModuleRegistry.getEnforcing<any>('MusixPlayerModule');
+  } catch {
+    return null;
+  }
+}
+
+const native = Platform.OS !== 'web' ? getNativeModule() : null;
+
+const playerModule: PlayerModule = {
+  async loadTrack(filePath: string): Promise<void> {
+    if (native) {
+      const ok = await native.loadTrack(filePath);
+      if (!ok) {
+        throw new Error(`Failed to load track: ${filePath}`);
+      }
+    }
+  },
+
+  async preloadNext(_filePath: string): Promise<void> {
+    // Phase 3.2: gapless pre-buffer
+  },
+
+  play(): void {
+    native?.play();
+  },
+
+  pause(): void {
+    native?.pause();
+  },
+
+  stop(): void {
+    native?.stop();
+  },
+
+  seekToFrame(positionMs: number): void {
+    native?.seekTo(positionMs);
+  },
+
   getPositionMs(): number {
-    return 0;
+    return native?.getPositionMs() ?? 0;
   },
+
   getDurationMs(): number {
-    return 0;
+    return native?.getDurationMs() ?? 0;
   },
+
   isPlaying(): boolean {
-    return false;
+    return native?.getIsPlaying() ?? false;
   },
 };
 
-export default stub;
+export default playerModule;

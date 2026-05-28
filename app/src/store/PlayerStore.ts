@@ -1,6 +1,7 @@
 import {create} from 'zustand';
 import {MMKV} from 'react-native-mmkv';
 import {getTrackById, type Track} from '../db';
+import {PlayerModule} from '@musix/audio-engine';
 
 const storage = new MMKV({id: 'player'});
 
@@ -117,13 +118,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         });
       }
       persist();
+
+      if (track.filePath) {
+        PlayerModule.loadTrack(track.filePath)
+          .then(() => PlayerModule.play())
+          .catch(() => set({isPlaying: false}));
+      }
     },
 
     pause: () => {
+      PlayerModule.pause();
       set({isPlaying: false});
       persist();
     },
-    resume: () => set({isPlaying: true}),
+    resume: () => {
+      PlayerModule.play();
+      set({isPlaying: true});
+    },
 
     next: () => {
       const {queue, queueIndex, repeat, shuffle: isShuffle} = get();
@@ -151,6 +162,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       if (track) {
         set({currentTrack: track, queueIndex: nextIndex, positionMs: 0});
         persist();
+        if (track.filePath) {
+          PlayerModule.loadTrack(track.filePath)
+            .then(() => PlayerModule.play())
+            .catch(() => set({isPlaying: false}));
+        }
       }
     },
 
@@ -169,10 +185,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       if (track) {
         set({currentTrack: track, queueIndex: prevIndex, positionMs: 0});
         persist();
+        if (track.filePath) {
+          PlayerModule.loadTrack(track.filePath)
+            .then(() => PlayerModule.play())
+            .catch(() => set({isPlaying: false}));
+        }
       }
     },
 
     seekTo: (ms) => {
+      PlayerModule.seekToFrame(ms);
       set({positionMs: ms});
       persist();
     },
@@ -215,6 +237,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     },
 
     clearQueue: () => {
+      PlayerModule.stop();
       set({
         currentTrack: null,
         queue: [],

@@ -6,6 +6,19 @@
   "types": "js/index.ts",
   "files": [
     "js",
-    "src"
-  ]
+    "src",
+    "musix-audio-engine.podspec"
+  ],
+  "codegenConfig": {
+    "name": "MusixAudioEngineSpec",
+    "type": "modules",
+    "jsSrcsDir": "js",
+    "android": {
+      "javaPackageName": "com.musix.audioengine"
+    }
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  }
 }
