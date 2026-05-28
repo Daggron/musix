@@ -7,4 +7,5 @@ export type {
   EQModule as EQModuleType,
   EQPreset,
   TrackMetadata,
+  WatchedFolder,
 } from './types';

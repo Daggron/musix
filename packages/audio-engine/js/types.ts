@@ -1,16 +1,15 @@
 export interface TrackMetadata {
-  title: string | null;
-  artist: string | null;
-  album: string | null;
-  year: number | null;
+  title: string;
+  artist: string;
+  album: string;
+  year: number;
+  genre: string;
   duration: number;
   bitrate: number;
-  sampleRate: number;
-  bitDepth: number;
   codec: 'flac' | 'alac' | 'wav';
-  coverArt: string | null;
   filePath: string;
   fileSize: number;
+  hue: number;
 }
 
 export interface PlayerModule {
@@ -31,10 +30,18 @@ export interface PlayerModule {
   clearInterrupted(): void;
 }
 
+export interface WatchedFolder {
+  id: string;
+  path: string;
+}
+
 export interface ScannerModule {
-  startFullScan(): Promise<void>;
-  cancelScan(): void;
+  importFiles(): Promise<string[]>;
   getMetadata(filePath: string): Promise<TrackMetadata>;
+  scanFolder(bookmarkId: string): Promise<string[]>;
+  addWatchedFolder(): Promise<string>;
+  removeWatchedFolder(bookmarkId: string): void;
+  getWatchedFolders(): WatchedFolder[];
 }
 
 export type EQPreset = 'default' | 'studio' | 'vinyl';

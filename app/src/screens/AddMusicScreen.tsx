@@ -1,7 +1,10 @@
-import React, {useState} from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import React, {useState, useCallback, useEffect} from 'react';
+import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
 import {IconClose, IconUpload, IconFolder, IconPlus} from '../components';
 import {useTheme, FONTS} from '../theme';
+import {ScannerModule, type WatchedFolder} from '@musix/audio-engine';
+import {insertTrack} from '../db';
+import {useLibraryStore} from '../store';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 const TABS = [
@@ -16,9 +19,106 @@ interface Props {
   navigation: NativeStackNavigationProp<Record<string, object | undefined>>;
 }
 
+function generateTrackId(filePath: string): string {
+  let hash = 0;
+  for (let i = 0; i < filePath.length; i++) {
+    hash = (hash * 31 + filePath.charCodeAt(i)) | 0;
+  }
+  return `trk_${Math.abs(hash).toString(36)}`;
+}
+
 export function AddMusicScreen({navigation}: Props) {
   const theme = useTheme();
   const [tab, setTab] = useState<TabKey>('picker');
+  const [importing, setImporting] = useState(false);
+  const [importCount, setImportCount] = useState(0);
+  const [watchedFolders, setWatchedFolders] = useState<WatchedFolder[]>([]);
+  const loadLibrary = useLibraryStore((s) => s.loadLibrary);
+
+  useEffect(() => {
+    setWatchedFolders(ScannerModule.getWatchedFolders());
+  }, []);
+
+  const importAndInsert = useCallback(async (filePaths: string[]) => {
+    let count = 0;
+    for (const fp of filePaths) {
+      try {
+        const meta = await ScannerModule.getMetadata(fp);
+        insertTrack({
+          id: generateTrackId(fp),
+          title: meta.title,
+          artist: meta.artist,
+          album: meta.album,
+          year: meta.year,
+          duration: meta.duration,
+          bitrate: meta.bitrate,
+          genre: meta.genre,
+          hue: meta.hue,
+          filePath: meta.filePath,
+        });
+        count++;
+      } catch {}
+    }
+    return count;
+  }, []);
+
+  const handleImportFiles = useCallback(async () => {
+    setImporting(true);
+    setImportCount(0);
+    try {
+      const paths = await ScannerModule.importFiles();
+      if (paths.length > 0) {
+        const count = await importAndInsert(paths);
+        setImportCount(count);
+        loadLibrary();
+      }
+    } finally {
+      setImporting(false);
+    }
+  }, [importAndInsert, loadLibrary]);
+
+  const handleAddFolder = useCallback(async () => {
+    const bookmarkId = await ScannerModule.addWatchedFolder();
+    if (bookmarkId) {
+      setWatchedFolders(ScannerModule.getWatchedFolders());
+      setImporting(true);
+      try {
+        const paths = await ScannerModule.scanFolder(bookmarkId);
+        if (paths.length > 0) {
+          const count = await importAndInsert(paths);
+          setImportCount(count);
+          loadLibrary();
+        }
+      } finally {
+        setImporting(false);
+      }
+    }
+  }, [importAndInsert, loadLibrary]);
+
+  const handleRemoveFolder = useCallback(
+    (bookmarkId: string) => {
+      ScannerModule.removeWatchedFolder(bookmarkId);
+      setWatchedFolders(ScannerModule.getWatchedFolders());
+    },
+    [],
+  );
+
+  const handleRescanFolder = useCallback(
+    async (bookmarkId: string) => {
+      setImporting(true);
+      try {
+        const paths = await ScannerModule.scanFolder(bookmarkId);
+        if (paths.length > 0) {
+          const count = await importAndInsert(paths);
+          setImportCount(count);
+          loadLibrary();
+        }
+      } finally {
+        setImporting(false);
+      }
+    },
+    [importAndInsert, loadLibrary],
+  );
 
   return (
     <View style={[styles.container, {backgroundColor: theme.paper}]}>
@@ -86,33 +186,23 @@ export function AddMusicScreen({navigation}: Props) {
               Pick FLAC files from local storage, iCloud Drive, or another app.
             </Text>
             <Pressable
-              style={[styles.openBtn, {backgroundColor: theme.ink}]}>
-              <IconFolder size={16} color={theme.paper} />
+              onPress={handleImportFiles}
+              disabled={importing}
+              style={[styles.openBtn, {backgroundColor: theme.ink, opacity: importing ? 0.6 : 1}]}>
+              {importing ? (
+                <ActivityIndicator size="small" color={theme.paper} />
+              ) : (
+                <IconFolder size={16} color={theme.paper} />
+              )}
               <Text style={[styles.openBtnText, {color: theme.paper}]}>
-                OPEN FILES
+                {importing ? 'IMPORTING...' : 'OPEN FILES'}
               </Text>
             </Pressable>
-            {[
-              {label: 'iCloud Drive', detail: '2 albums staged'},
-              {label: 'Bandcamp downloads', detail: '47 tracks'},
-              {label: 'Recently added', detail: 'this week'},
-            ].map((s) => (
-              <View
-                key={s.label}
-                style={[styles.sourceRow, {borderBottomColor: theme.rule}]}>
-                <View style={[styles.sourceIcon, {backgroundColor: theme.card}]}>
-                  <IconFolder size={18} color={theme.ink3} />
-                </View>
-                <View style={styles.sourceInfo}>
-                  <Text style={[styles.sourceLabel, {color: theme.ink}]}>
-                    {s.label}
-                  </Text>
-                  <Text style={[styles.sourceDetail, {color: theme.ink3}]}>
-                    {s.detail}
-                  </Text>
-                </View>
-              </View>
-            ))}
+            {importCount > 0 && (
+              <Text style={[styles.importStatus, {color: theme.accent}]}>
+                {importCount} track{importCount !== 1 ? 's' : ''} imported
+              </Text>
+            )}
           </View>
         )}
 
@@ -124,24 +214,13 @@ export function AddMusicScreen({navigation}: Props) {
             <Text style={[styles.pickerSub, {color: theme.ink3}]}>
               Musix scans these folders and adds new FLAC files automatically.
             </Text>
-            {[
-              {path: '~/Music/FLAC Library', count: 1248, watching: true},
-              {path: '~/Downloads/Bandcamp', count: 47, watching: false},
-            ].map((f) => (
+            {watchedFolders.map((f) => (
               <View
-                key={f.path}
+                key={f.id}
                 style={[styles.sourceRow, {borderBottomColor: theme.rule}]}>
                 <View
-                  style={[
-                    styles.sourceIcon,
-                    {
-                      backgroundColor: f.watching ? theme.accent : theme.card,
-                    },
-                  ]}>
-                  <IconFolder
-                    size={18}
-                    color={f.watching ? theme.paper : theme.ink3}
-                  />
+                  style={[styles.sourceIcon, {backgroundColor: theme.accent}]}>
+                  <IconFolder size={18} color={theme.paper} />
                 </View>
                 <View style={styles.sourceInfo}>
                   <Text
@@ -149,35 +228,23 @@ export function AddMusicScreen({navigation}: Props) {
                     style={[styles.folderPath, {color: theme.ink}]}>
                     {f.path}
                   </Text>
-                  <Text style={[styles.sourceDetail, {color: theme.ink3}]}>
-                    {f.count} tracks indexed{f.watching ? ' · watching' : ''}
-                  </Text>
+                  <Pressable onPress={() => handleRescanFolder(f.id)}>
+                    <Text style={[styles.sourceDetail, {color: theme.accent}]}>
+                      Tap to rescan
+                    </Text>
+                  </Pressable>
                 </View>
-                <View
-                  style={[
-                    styles.toggle,
-                    {
-                      backgroundColor: f.watching
-                        ? theme.accent
-                        : theme.ruleStrong,
-                    },
-                  ]}>
-                  <View
-                    style={[
-                      styles.toggleThumb,
-                      {
-                        backgroundColor: theme.paper,
-                        transform: [{translateX: f.watching ? 18 : 0}],
-                      },
-                    ]}
-                  />
-                </View>
+                <Pressable onPress={() => handleRemoveFolder(f.id)}>
+                  <IconClose size={16} color={theme.ink3} />
+                </Pressable>
               </View>
             ))}
             <Pressable
+              onPress={handleAddFolder}
+              disabled={importing}
               style={[
                 styles.addFolderBtn,
-                {backgroundColor: theme.card, borderColor: theme.ruleStrong},
+                {backgroundColor: theme.card, borderColor: theme.ruleStrong, opacity: importing ? 0.6 : 1},
               ]}>
               <IconPlus size={14} color={theme.ink} />
               <Text style={[styles.addFolderText, {color: theme.ink}]}>
@@ -296,6 +363,13 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.mono,
     fontSize: 11,
     letterSpacing: 1.5,
+  },
+  importStatus: {
+    fontFamily: FONTS.mono,
+    fontSize: 11,
+    letterSpacing: 1,
+    textAlign: 'center',
+    marginTop: 10,
   },
   sourceRow: {
     flexDirection: 'row',
