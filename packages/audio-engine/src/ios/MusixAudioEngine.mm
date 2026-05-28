@@ -1,21 +1,14 @@
 #import "MusixAudioEngine.h"
 
 #import <AVFoundation/AVFoundation.h>
-#import <atomic>
-#import <mutex>
+#import <cstring>
 
-#include "FlacDecoder.h"
-
-static const UInt32 kRenderFrameCount = 512;
+#include "AudioPlayer.h"
 
 @implementation MusixAudioEngine {
   AVAudioEngine *_engine;
   AVAudioSourceNode *_sourceNode;
-  musix::FlacDecoder _decoder;
-  std::mutex _decoderMutex;
-  std::atomic<bool> _playing;
-  std::atomic<uint64_t> _currentFrame;
-  std::atomic<bool> _trackEnded;
+  musix::AudioPlayer _player;
   NSTimer *_positionTimer;
 }
 
@@ -31,9 +24,6 @@ static const UInt32 kRenderFrameCount = 512;
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _playing.store(false);
-    _currentFrame.store(0);
-    _trackEnded.store(false);
     [self configureAudioSession];
     [self setupEngine];
   }
@@ -55,15 +45,11 @@ static const UInt32 kRenderFrameCount = 512;
 }
 
 - (BOOL)loadTrack:(NSString *)filePath {
-  [self stop];
+  [self stopPlayback];
 
-  std::lock_guard<std::mutex> lock(_decoderMutex);
-  if (!_decoder.open(std::string([filePath UTF8String]))) {
+  if (!_player.loadTrack(std::string([filePath UTF8String]))) {
     return NO;
   }
-
-  _currentFrame.store(0);
-  _trackEnded.store(false);
 
   [self rebuildSourceNode];
   return YES;
@@ -76,9 +62,10 @@ static const UInt32 kRenderFrameCount = 512;
     _sourceNode = nil;
   }
 
-  uint32_t sampleRate = _decoder.sampleRate();
-  uint32_t channels = _decoder.channels();
-  if (sampleRate == 0 || channels == 0) return;
+  uint32_t sampleRate = _player.sampleRate();
+  uint32_t channels = _player.channels();
+  if (sampleRate == 0 || channels == 0)
+    return;
 
   AVAudioFormat *format = [[AVAudioFormat alloc]
       initWithCommonFormat:AVAudioPCMFormatFloat32
@@ -101,58 +88,35 @@ static const UInt32 kRenderFrameCount = 512;
              return noErr;
            }
            return [strongSelf renderFrames:frameCount
-                                    into:outputData
-                                isSilence:isSilence];
+                                      into:outputData
+                                 isSilence:isSilence];
          }];
 
   [_engine attachNode:_sourceNode];
-  [_engine connect:_sourceNode
-                to:_engine.mainMixerNode
-            format:format];
+  [_engine connect:_sourceNode to:_engine.mainMixerNode format:format];
 }
 
 - (OSStatus)renderFrames:(AVAudioFrameCount)frameCount
                     into:(AudioBufferList *)outputData
                isSilence:(BOOL *)isSilence {
-  if (!_playing.load()) {
-    *isSilence = YES;
-    for (UInt32 i = 0; i < outputData->mNumberBuffers; i++) {
-      memset(outputData->mBuffers[i].mData, 0,
-             outputData->mBuffers[i].mDataByteSize);
-    }
-    return noErr;
-  }
-
   float *outBuffer = (float *)outputData->mBuffers[0].mData;
 
-  // dr_flac is not lock-free, but for the hello-sound slice this is acceptable.
-  // Phase 3.1 replaces this with a proper lock-free ring buffer.
-  std::unique_lock<std::mutex> lock(_decoderMutex, std::try_to_lock);
-  if (!lock.owns_lock()) {
-    *isSilence = YES;
-    memset(outBuffer, 0, frameCount * _decoder.channels() * sizeof(float));
-    return noErr;
-  }
-
-  uint64_t framesRead = _decoder.readFrames(outBuffer, frameCount);
-  _currentFrame.fetch_add(framesRead);
+  uint32_t framesRead = _player.pullAudio(outBuffer, frameCount);
 
   if (framesRead < frameCount) {
-    uint32_t ch = _decoder.channels();
-    memset(outBuffer + framesRead * ch, 0,
-           (frameCount - framesRead) * ch * sizeof(float));
-    if (framesRead == 0) {
-      _playing.store(false);
-      _trackEnded.store(true);
-    }
+    uint32_t ch = _player.channels();
+    if (ch == 0) ch = 1;
+    std::memset(outBuffer + framesRead * ch, 0,
+                (frameCount - framesRead) * ch * sizeof(float));
   }
 
-  *isSilence = NO;
+  *isSilence = (framesRead == 0);
   return noErr;
 }
 
 - (void)play {
-  if (!_decoder.isOpen()) return;
+  if (!_player.isTrackLoaded())
+    return;
 
   NSError *error = nil;
   if (!_engine.isRunning) {
@@ -163,52 +127,42 @@ static const UInt32 kRenderFrameCount = 512;
     }
   }
 
-  _playing.store(true);
+  _player.play();
   [self startPositionTimer];
 }
 
 - (void)pause {
-  _playing.store(false);
+  _player.pause();
   [self stopPositionTimer];
 }
 
 - (void)stop {
-  _playing.store(false);
+  [self stopPlayback];
+}
+
+- (void)stopPlayback {
+  _player.stop();
   [self stopPositionTimer];
 
   if (_engine.isRunning) {
     [_engine stop];
   }
-
-  std::lock_guard<std::mutex> lock(_decoderMutex);
-  _decoder.close();
-  _currentFrame.store(0);
 }
 
 - (void)seekToMs:(double)positionMs {
-  if (!_decoder.isOpen()) return;
-
-  uint64_t targetFrame =
-      (uint64_t)(positionMs / 1000.0 * (double)_decoder.sampleRate());
-
-  std::lock_guard<std::mutex> lock(_decoderMutex);
-  if (_decoder.seekToFrame(targetFrame)) {
-    _currentFrame.store(targetFrame);
-  }
+  _player.seekToMs(positionMs);
 }
 
 - (double)positionMs {
-  uint32_t sr = _decoder.sampleRate();
-  if (sr == 0) return 0.0;
-  return (double)_currentFrame.load() / (double)sr * 1000.0;
+  return _player.positionMs();
 }
 
 - (double)durationMs {
-  return _decoder.durationMs();
+  return _player.durationMs();
 }
 
 - (BOOL)isPlaying {
-  return _playing.load();
+  return _player.isPlaying();
 }
 
 #pragma mark - Position Timer
@@ -216,22 +170,24 @@ static const UInt32 kRenderFrameCount = 512;
 - (void)startPositionTimer {
   [self stopPositionTimer];
   __weak MusixAudioEngine *weakSelf = self;
-  _positionTimer =
-      [NSTimer scheduledTimerWithTimeInterval:0.25
-                                      repeats:YES
-                                        block:^(NSTimer *timer) {
-                                          __strong MusixAudioEngine *s = weakSelf;
-                                          if (!s) return;
-                                          if (s->_trackEnded.exchange(false)) {
-                                            s->_playing.store(false);
-                                            [s stopPositionTimer];
-                                            if (s.onTrackEnd) s.onTrackEnd();
-                                            return;
-                                          }
-                                          if (s.onPositionUpdate) {
-                                            s.onPositionUpdate([s positionMs]);
-                                          }
-                                        }];
+  _positionTimer = [NSTimer
+      scheduledTimerWithTimeInterval:0.25
+                             repeats:YES
+                               block:^(NSTimer *timer) {
+                                 __strong MusixAudioEngine *s = weakSelf;
+                                 if (!s)
+                                   return;
+                                 if (s->_player.hasTrackEnded()) {
+                                   s->_player.clearTrackEnded();
+                                   [s stopPositionTimer];
+                                   if (s.onTrackEnd)
+                                     s.onTrackEnd();
+                                   return;
+                                 }
+                                 if (s.onPositionUpdate) {
+                                   s.onPositionUpdate([s positionMs]);
+                                 }
+                               }];
 }
 
 - (void)stopPositionTimer {
