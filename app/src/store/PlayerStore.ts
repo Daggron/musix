@@ -46,6 +46,7 @@ interface PlayerState {
   queueIndex: number;
   isPlaying: boolean;
   positionMs: number;
+  durationMs: number;
   shuffle: boolean;
   repeat: RepeatMode;
 
@@ -96,6 +97,60 @@ function preloadNextInQueue(queue: string[], queueIndex: number, repeat: RepeatM
   }
 }
 
+let syncInterval: ReturnType<typeof setInterval> | null = null;
+
+function startSync(get: () => PlayerState): void {
+  stopSync();
+  syncInterval = setInterval(() => {
+    const state = get();
+    if (!state.isPlaying) return;
+
+    const positionMs = PlayerModule.getPositionMs();
+    const durationMs = PlayerModule.getDurationMs();
+
+    if (PlayerModule.hasTrackTransitioned()) {
+      PlayerModule.clearTrackTransitioned();
+      const {queue, queueIndex, repeat, shuffle: isShuffle} = state;
+      let nextIndex: number;
+      if (isShuffle) {
+        nextIndex = Math.floor(Math.random() * queue.length);
+      } else {
+        nextIndex = queueIndex + 1;
+        if (nextIndex >= queue.length) {
+          nextIndex = repeat === 'all' ? 0 : queueIndex;
+        }
+      }
+      const nextTrack = getTrackById(queue[nextIndex]);
+      if (nextTrack) {
+        usePlayerStore.setState({
+          currentTrack: nextTrack,
+          queueIndex: nextIndex,
+          positionMs: 0,
+          durationMs: PlayerModule.getDurationMs(),
+        });
+        preloadNextInQueue(queue, nextIndex, repeat, isShuffle);
+        saveResume(usePlayerStore.getState());
+      }
+      return;
+    }
+
+    if (PlayerModule.hasTrackEnded()) {
+      PlayerModule.clearTrackEnded();
+      usePlayerStore.getState().next();
+      return;
+    }
+
+    usePlayerStore.setState({positionMs, durationMs});
+  }, 250);
+}
+
+function stopSync(): void {
+  if (syncInterval !== null) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+  }
+}
+
 export const usePlayerStore = create<PlayerState>((set, get) => {
   const persist = () => saveResume(get());
 
@@ -105,6 +160,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     queueIndex: -1,
     isPlaying: false,
     positionMs: 0,
+    durationMs: 0,
     shuffle: false,
     repeat: 'off',
 
@@ -148,21 +204,28 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         PlayerModule.loadTrack(track.filePath)
           .then(() => {
             PlayerModule.play();
+            set({durationMs: PlayerModule.getDurationMs()});
+            startSync(get);
             const s = get();
             preloadNextInQueue(s.queue, s.queueIndex, s.repeat, s.shuffle);
           })
-          .catch(() => set({isPlaying: false}));
+          .catch(() => {
+            set({isPlaying: false});
+            stopSync();
+          });
       }
     },
 
     pause: () => {
       PlayerModule.pause();
+      stopSync();
       set({isPlaying: false});
       persist();
     },
     resume: () => {
       PlayerModule.play();
       set({isPlaying: true});
+      startSync(get);
     },
 
     next: () => {
@@ -180,6 +243,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
           if (repeat === 'all') {
             nextIndex = 0;
           } else {
+            stopSync();
             set({isPlaying: false});
             persist();
             return;
@@ -195,9 +259,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
           PlayerModule.loadTrack(track.filePath)
             .then(() => {
               PlayerModule.play();
+              set({durationMs: PlayerModule.getDurationMs()});
+              startSync(get);
               preloadNextInQueue(queue, nextIndex, repeat, isShuffle);
             })
-            .catch(() => set({isPlaying: false}));
+            .catch(() => {
+              set({isPlaying: false});
+              stopSync();
+            });
         }
       }
     },
@@ -222,9 +291,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
           PlayerModule.loadTrack(track.filePath)
             .then(() => {
               PlayerModule.play();
+              set({durationMs: PlayerModule.getDurationMs()});
+              startSync(get);
               preloadNextInQueue(queue, prevIndex, r, sh);
             })
-            .catch(() => set({isPlaying: false}));
+            .catch(() => {
+              set({isPlaying: false});
+              stopSync();
+            });
         }
       }
     },
@@ -274,12 +348,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
     clearQueue: () => {
       PlayerModule.stop();
+      stopSync();
       set({
         currentTrack: null,
         queue: [],
         queueIndex: -1,
         isPlaying: false,
         positionMs: 0,
+        durationMs: 0,
       });
       persist();
     },

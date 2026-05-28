@@ -11,6 +11,10 @@ export interface Spec extends TurboModule {
   getPositionMs(): number;
   getDurationMs(): number;
   getIsPlaying(): boolean;
+  hasTrackEnded(): boolean;
+  clearTrackEnded(): void;
+  hasTrackTransitioned(): boolean;
+  clearTrackTransitioned(): void;
   getDocumentsPath(): string;
 }
 

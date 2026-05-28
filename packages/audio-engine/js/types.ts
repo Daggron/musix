@@ -23,6 +23,10 @@ export interface PlayerModule {
   getPositionMs(): number;
   getDurationMs(): number;
   isPlaying(): boolean;
+  hasTrackEnded(): boolean;
+  clearTrackEnded(): void;
+  hasTrackTransitioned(): boolean;
+  clearTrackTransitioned(): void;
 }
 
 export interface ScannerModule {

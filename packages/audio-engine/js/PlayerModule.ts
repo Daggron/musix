@@ -54,6 +54,22 @@ const playerModule: PlayerModule = {
   isPlaying(): boolean {
     return native?.getIsPlaying() ?? false;
   },
+
+  hasTrackEnded(): boolean {
+    return native?.hasTrackEnded() ?? false;
+  },
+
+  clearTrackEnded(): void {
+    native?.clearTrackEnded();
+  },
+
+  hasTrackTransitioned(): boolean {
+    return native?.hasTrackTransitioned() ?? false;
+  },
+
+  clearTrackTransitioned(): void {
+    native?.clearTrackTransitioned();
+  },
 };
 
 export default playerModule;

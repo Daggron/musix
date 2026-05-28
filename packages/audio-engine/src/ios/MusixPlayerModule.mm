@@ -51,6 +51,22 @@ RCT_EXPORT_MODULE(MusixPlayerModule)
   return @([[MusixAudioEngine shared] isPlaying]);
 }
 
+- (NSNumber *)hasTrackEnded {
+  return @([[MusixAudioEngine shared] hasTrackEnded]);
+}
+
+- (void)clearTrackEnded {
+  [[MusixAudioEngine shared] clearTrackEnded];
+}
+
+- (NSNumber *)hasTrackTransitioned {
+  return @([[MusixAudioEngine shared] hasTrackTransitioned]);
+}
+
+- (void)clearTrackTransitioned {
+  [[MusixAudioEngine shared] clearTrackTransitioned];
+}
+
 - (NSString *)getDocumentsPath {
   NSArray *paths = NSSearchPathForDirectoriesInDomains(
       NSDocumentDirectory, NSUserDomainMask, YES);

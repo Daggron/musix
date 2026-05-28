@@ -35,6 +35,7 @@ export function NowPlayingScreen({navigation}: Props) {
   const track = usePlayerStore((s) => s.currentTrack);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const positionMs = usePlayerStore((s) => s.positionMs);
+  const durationMs = usePlayerStore((s) => s.durationMs);
   const shuffle = usePlayerStore((s) => s.shuffle);
   const repeat = usePlayerStore((s) => s.repeat);
   const next = usePlayerStore((s) => s.next);
@@ -66,7 +67,8 @@ export function NowPlayingScreen({navigation}: Props) {
   }
 
   const positionSec = positionMs / 1000;
-  const progress = track.duration > 0 ? positionSec / track.duration : 0;
+  const totalSec = durationMs > 0 ? durationMs / 1000 : track.duration;
+  const progress = totalSec > 0 ? positionSec / totalSec : 0;
   const isTrackLiked = liked(track.id);
 
   return (
@@ -133,7 +135,7 @@ export function NowPlayingScreen({navigation}: Props) {
             {fmtTime(positionSec)}
           </Text>
           <Text style={[styles.time, {color: theme.ink3}]}>
-            −{fmtTime(track.duration - positionSec)}
+            −{fmtTime(totalSec - positionSec)}
           </Text>
         </View>
       </View>

@@ -9,7 +9,6 @@
   AVAudioEngine *_engine;
   AVAudioSourceNode *_sourceNode;
   musix::AudioPlayer _player;
-  NSTimer *_positionTimer;
 }
 
 + (instancetype)shared {
@@ -132,12 +131,10 @@
   }
 
   _player.play();
-  [self startPositionTimer];
 }
 
 - (void)pause {
   _player.pause();
-  [self stopPositionTimer];
 }
 
 - (void)stop {
@@ -146,7 +143,6 @@
 
 - (void)stopPlayback {
   _player.stop();
-  [self stopPositionTimer];
 
   if (_engine.isRunning) {
     [_engine stop];
@@ -169,39 +165,20 @@
   return _player.isPlaying();
 }
 
-#pragma mark - Position Timer
-
-- (void)startPositionTimer {
-  [self stopPositionTimer];
-  __weak MusixAudioEngine *weakSelf = self;
-  _positionTimer = [NSTimer
-      scheduledTimerWithTimeInterval:0.25
-                             repeats:YES
-                               block:^(NSTimer *timer) {
-                                 __strong MusixAudioEngine *s = weakSelf;
-                                 if (!s)
-                                   return;
-                                 if (s->_player.hasTrackTransitioned()) {
-                                   s->_player.clearTrackTransitioned();
-                                   if (s.onTrackTransition)
-                                     s.onTrackTransition();
-                                 }
-                                 if (s->_player.hasTrackEnded()) {
-                                   s->_player.clearTrackEnded();
-                                   [s stopPositionTimer];
-                                   if (s.onTrackEnd)
-                                     s.onTrackEnd();
-                                   return;
-                                 }
-                                 if (s.onPositionUpdate) {
-                                   s.onPositionUpdate([s positionMs]);
-                                 }
-                               }];
+- (BOOL)hasTrackEnded {
+  return _player.hasTrackEnded();
 }
 
-- (void)stopPositionTimer {
-  [_positionTimer invalidate];
-  _positionTimer = nil;
+- (void)clearTrackEnded {
+  _player.clearTrackEnded();
+}
+
+- (BOOL)hasTrackTransitioned {
+  return _player.hasTrackTransitioned();
+}
+
+- (void)clearTrackTransitioned {
+  _player.clearTrackTransitioned();
 }
 
 @end
