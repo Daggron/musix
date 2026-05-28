@@ -1,42 +1,51 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect} from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {PageHeader, TrackRow, IconPlus, IconShuffle} from '../components';
 import {useTheme, FONTS} from '../theme';
-import {SONGS} from '../data/mockData';
+import {useLibraryStore, usePlayerStore} from '../store';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 const SORT_TABS = [
-  {key: 'title', label: 'Title'},
-  {key: 'artist', label: 'Artist'},
-  {key: 'recent', label: 'Recent'},
-] as const;
-
-type SortKey = (typeof SORT_TABS)[number]['key'];
+  {key: 'title' as const, label: 'Title'},
+  {key: 'artist' as const, label: 'Artist'},
+  {key: 'recent' as const, label: 'Recent'},
+];
 
 export function SongsScreen() {
   const theme = useTheme();
-  const [sort, setSort] = useState<SortKey>('title');
+  const navigation = useNavigation<NativeStackNavigationProp<Record<string, object | undefined>>>();
+  const tracks = useLibraryStore((s) => s.tracks);
+  const sortMode = useLibraryStore((s) => s.sortMode);
+  const setSortMode = useLibraryStore((s) => s.setSortMode);
+  const loadLibrary = useLibraryStore((s) => s.loadLibrary);
+  const loaded = useLibraryStore((s) => s.loaded);
+  const play = usePlayerStore((s) => s.play);
+  const currentTrack = usePlayerStore((s) => s.currentTrack);
 
-  const sorted = useMemo(() => {
-    const arr = [...SONGS];
-    if (sort === 'title') {
-      arr.sort((a, b) => a.t.localeCompare(b.t));
-    } else if (sort === 'artist') {
-      arr.sort((a, b) => a.ar.localeCompare(b.ar));
-    } else {
-      arr.reverse();
-    }
-    return arr;
-  }, [sort]);
+  useEffect(() => {
+    if (!loaded) loadLibrary();
+  }, [loaded, loadLibrary]);
+
+  const trackIds = tracks.map((t) => t.id);
+
+  const handleShuffle = () => {
+    if (tracks.length === 0) return;
+    const shuffled = [...trackIds].sort(() => Math.random() - 0.5);
+    usePlayerStore.getState().setQueue(shuffled, 0);
+    navigation.navigate('NowPlaying');
+  };
 
   return (
     <ScrollView
       style={[styles.scroll, {backgroundColor: theme.paper}]}
       contentContainerStyle={styles.content}>
       <PageHeader
-        kicker={`${SONGS.length} tracks · FLAC library`}
+        kicker={`${tracks.length} tracks · FLAC library`}
         title="Songs"
         right={
           <Pressable
+            onPress={() => navigation.navigate('AddMusic')}
             style={[
               styles.addBtn,
               {backgroundColor: theme.card, borderColor: theme.ruleStrong},
@@ -49,14 +58,14 @@ export function SongsScreen() {
       <View style={styles.sortRow}>
         <View style={styles.sortTabs}>
           {SORT_TABS.map(({key, label}) => (
-            <Pressable key={key} onPress={() => setSort(key)}>
+            <Pressable key={key} onPress={() => setSortMode(key)}>
               <Text
                 style={[
                   styles.sortLabel,
                   {
-                    color: sort === key ? theme.ink : theme.ink4,
+                    color: sortMode === key ? theme.ink : theme.ink4,
                     borderBottomColor:
-                      sort === key ? theme.accent : 'transparent',
+                      sortMode === key ? theme.accent : 'transparent',
                   },
                 ]}>
                 {label.toUpperCase()}
@@ -64,7 +73,7 @@ export function SongsScreen() {
             </Pressable>
           ))}
         </View>
-        <Pressable style={styles.shuffleBtn}>
+        <Pressable style={styles.shuffleBtn} onPress={handleShuffle}>
           <IconShuffle size={14} color={theme.accent} />
           <Text style={[styles.shuffleText, {color: theme.accent}]}>
             SHUFFLE ALL
@@ -73,8 +82,16 @@ export function SongsScreen() {
       </View>
 
       <View style={styles.list}>
-        {sorted.map((song) => (
-          <TrackRow key={song.id} song={song} />
+        {tracks.map((track) => (
+          <TrackRow
+            key={track.id}
+            track={track}
+            isCurrent={currentTrack?.id === track.id}
+            onPress={() => {
+              play(track.id, trackIds);
+              navigation.navigate('NowPlaying');
+            }}
+          />
         ))}
       </View>
 

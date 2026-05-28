@@ -1,18 +1,9 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {IconClose} from '../components';
 import {useTheme, FONTS} from '../theme';
+import {useEQStore, EQ_BANDS, EQ_PRESETS} from '../store';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
-
-const EQ_BANDS = ['32', '64', '125', '250', '500', '1k', '2k', '4k', '8k', '16k'];
-const EQ_PRESETS: Record<string, number[]> = {
-  Flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  Vinyl: [3, 2, 1, 0, -1, -2, -2, -1, -2, -3],
-  Studio: [0, 0, 0, 0, 0, 1, 1, 2, 2, 1],
-  Warm: [4, 3, 2, 1, 0, -1, -2, -3, -3, -2],
-  Vocal: [-2, -2, -1, 1, 3, 4, 3, 1, 0, -1],
-  'Jazz Club': [2, 2, 1, 0, 0, 1, 2, 2, 3, 2],
-};
 
 interface Props {
   navigation: NativeStackNavigationProp<Record<string, object | undefined>>;
@@ -20,14 +11,11 @@ interface Props {
 
 export function EqualizerScreen({navigation}: Props) {
   const theme = useTheme();
-  const [preset, setPreset] = useState('Studio');
-  const [levels, setLevels] = useState([...EQ_PRESETS.Studio]);
-  const [enabled, setEnabled] = useState(true);
-
-  const applyPreset = (name: string) => {
-    setPreset(name);
-    setLevels([...EQ_PRESETS[name]]);
-  };
+  const enabled = useEQStore((s) => s.enabled);
+  const preset = useEQStore((s) => s.preset);
+  const levels = useEQStore((s) => s.levels);
+  const toggleEnabled = useEQStore((s) => s.toggleEnabled);
+  const applyPreset = useEQStore((s) => s.applyPreset);
 
   return (
     <View style={[styles.container, {backgroundColor: theme.paper}]}>
@@ -40,7 +28,7 @@ export function EqualizerScreen({navigation}: Props) {
         </View>
         <View style={styles.headerRight}>
           <Pressable
-            onPress={() => setEnabled(!enabled)}
+            onPress={toggleEnabled}
             style={[
               styles.toggle,
               {backgroundColor: enabled ? theme.accent : theme.ruleStrong},

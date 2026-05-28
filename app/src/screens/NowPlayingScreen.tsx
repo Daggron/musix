@@ -8,16 +8,19 @@ import {
   IconShuffle,
   IconPrev,
   IconPlay,
+  IconPause,
   IconNext,
   IconRepeat,
   IconHeart,
+  IconHeartFilled,
   IconEQ,
   IconMore,
   FlacChip,
 } from '../components';
 import {useTheme, FONTS} from '../theme';
 import {useThemeStore} from '../theme';
-import {SONGS, fmtTime} from '../data/mockData';
+import {usePlayerStore, usePlaylistStore, useEQStore} from '../store';
+import {fmtTime} from '../utils';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 interface Props {
@@ -28,9 +31,43 @@ export function NowPlayingScreen({navigation}: Props) {
   const theme = useTheme();
   const playerKind = useThemeStore((s) => s.playerKind);
   const setPlayerKind = useThemeStore((s) => s.setPlayerKind);
-  const song = SONGS[10]; // Waltz for Debby
-  const progress = 0.34;
-  const cur = song.d * progress;
+
+  const track = usePlayerStore((s) => s.currentTrack);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const positionMs = usePlayerStore((s) => s.positionMs);
+  const shuffle = usePlayerStore((s) => s.shuffle);
+  const repeat = usePlayerStore((s) => s.repeat);
+  const next = usePlayerStore((s) => s.next);
+  const prev = usePlayerStore((s) => s.prev);
+  const pause = usePlayerStore((s) => s.pause);
+  const resume = usePlayerStore((s) => s.resume);
+  const toggleShuffle = usePlayerStore((s) => s.toggleShuffle);
+  const cycleRepeat = usePlayerStore((s) => s.cycleRepeat);
+
+  const liked = usePlaylistStore((s) => s.isLiked);
+  const toggleLike = usePlaylistStore((s) => s.toggleLike);
+  const eqPreset = useEQStore((s) => s.preset);
+
+  if (!track) {
+    return (
+      <View style={[styles.container, {backgroundColor: theme.paper}]}>
+        <View style={styles.topBar}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.btn}>
+            <IconChevDown size={22} color={theme.ink} />
+          </Pressable>
+        </View>
+        <View style={styles.artwork}>
+          <Text style={[styles.emptyText, {color: theme.ink3}]}>
+            No track selected
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  const positionSec = positionMs / 1000;
+  const progress = track.duration > 0 ? positionSec / track.duration : 0;
+  const isTrackLiked = liked(track.id);
 
   return (
     <View style={[styles.container, {backgroundColor: theme.paper}]}>
@@ -43,7 +80,7 @@ export function NowPlayingScreen({navigation}: Props) {
             NOW PLAYING
           </Text>
           <Text style={[styles.albumLabel, {color: theme.ink2}]}>
-            from <Text style={{fontStyle: 'italic'}}>{song.al}</Text>
+            from <Text style={{fontStyle: 'italic'}}>{track.album}</Text>
           </Text>
         </View>
         <Pressable
@@ -60,15 +97,15 @@ export function NowPlayingScreen({navigation}: Props) {
       </View>
 
       <View style={styles.artwork}>
-        <AlbumCover albumName={song.al} hue={song.hue} size={300} radius={12} />
+        <AlbumCover albumName={track.album} hue={track.hue} size={300} radius={12} />
       </View>
 
       <View style={styles.titleBlock}>
-        <Text style={[styles.title, {color: theme.ink}]}>{song.t}</Text>
+        <Text style={[styles.title, {color: theme.ink}]}>{track.title}</Text>
         <View style={styles.subtitleRow}>
-          <Text style={[styles.artist, {color: theme.ink3}]}>{song.ar}</Text>
+          <Text style={[styles.artist, {color: theme.ink3}]}>{track.artist}</Text>
           <View style={[styles.dot, {backgroundColor: theme.ink4}]} />
-          <Text style={[styles.artist, {color: theme.ink3}]}>{song.y}</Text>
+          <Text style={[styles.artist, {color: theme.ink3}]}>{track.year}</Text>
           <FlacChip />
         </View>
       </View>
@@ -93,42 +130,56 @@ export function NowPlayingScreen({navigation}: Props) {
         </View>
         <View style={styles.timeRow}>
           <Text style={[styles.time, {color: theme.ink3}]}>
-            {fmtTime(cur)}
+            {fmtTime(positionSec)}
           </Text>
           <Text style={[styles.time, {color: theme.ink3}]}>
-            −{fmtTime(song.d - cur)}
+            −{fmtTime(track.duration - positionSec)}
           </Text>
         </View>
       </View>
 
       <View style={styles.transport}>
-        <Pressable style={styles.sideBtn}>
-          <IconShuffle size={22} color={theme.ink3} />
+        <Pressable style={styles.sideBtn} onPress={toggleShuffle}>
+          <IconShuffle size={22} color={shuffle ? theme.accent : theme.ink3} />
         </Pressable>
-        <Pressable style={styles.transportBtn}>
+        <Pressable style={styles.transportBtn} onPress={prev}>
           <IconPrev size={28} color={theme.ink} />
         </Pressable>
         <Pressable
+          onPress={isPlaying ? pause : resume}
           style={[styles.playBtn, {backgroundColor: theme.ink}]}>
-          <IconPlay size={28} color={theme.paper} />
+          {isPlaying ? (
+            <IconPause size={28} color={theme.paper} />
+          ) : (
+            <IconPlay size={28} color={theme.paper} />
+          )}
         </Pressable>
-        <Pressable style={styles.transportBtn}>
+        <Pressable style={styles.transportBtn} onPress={next}>
           <IconNext size={28} color={theme.ink} />
         </Pressable>
-        <Pressable style={styles.sideBtn}>
-          <IconRepeat size={22} color={theme.ink3} />
+        <Pressable style={styles.sideBtn} onPress={cycleRepeat}>
+          <IconRepeat
+            size={22}
+            color={repeat !== 'off' ? theme.accent : theme.ink3}
+          />
         </Pressable>
       </View>
 
       <View style={styles.bottomRow}>
-        <Pressable style={styles.bottomBtn}>
-          <IconHeart size={20} color={theme.ink3} />
+        <Pressable style={styles.bottomBtn} onPress={() => toggleLike(track.id)}>
+          {isTrackLiked ? (
+            <IconHeartFilled size={20} color={theme.accent} />
+          ) : (
+            <IconHeart size={20} color={theme.ink3} />
+          )}
         </Pressable>
         <Pressable
           onPress={() => navigation.navigate('Equalizer')}
           style={styles.eqBtn}>
           <IconEQ size={16} color={theme.ink3} />
-          <Text style={[styles.eqText, {color: theme.ink3}]}>EQ · STUDIO</Text>
+          <Text style={[styles.eqText, {color: theme.ink3}]}>
+            EQ · {eqPreset.toUpperCase()}
+          </Text>
         </Pressable>
         <Pressable style={styles.bottomBtn}>
           <IconMore size={20} color={theme.ink3} />
@@ -289,5 +340,10 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.mono,
     fontSize: 10,
     letterSpacing: 1.5,
+  },
+  emptyText: {
+    fontFamily: FONTS.serif,
+    fontStyle: 'italic',
+    fontSize: 20,
   },
 });

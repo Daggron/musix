@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   Pressable,
   ScrollView,
@@ -8,15 +8,33 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {PageHeader, IconSearch, IconClose} from '../components';
+import {PageHeader, TrackRow, IconSearch, IconClose} from '../components';
 import {useTheme, FONTS, hueToGradient} from '../theme';
-import {GENRES} from '../data/mockData';
+import {useLibraryStore, usePlayerStore} from '../store';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 const RECENT_SEARCHES = ['Bill Evans', 'Kind of Blue', 'Late Night'];
 
 export function SearchScreen() {
   const theme = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<Record<string, object | undefined>>>();
   const [query, setQuery] = useState('');
+  const genres = useLibraryStore((s) => s.genres);
+  const loaded = useLibraryStore((s) => s.loaded);
+  const loadLibrary = useLibraryStore((s) => s.loadLibrary);
+  const searchFn = useLibraryStore((s) => s.search);
+  const play = usePlayerStore((s) => s.play);
+  const currentTrack = usePlayerStore((s) => s.currentTrack);
+
+  useEffect(() => {
+    if (!loaded) loadLibrary();
+  }, [loaded, loadLibrary]);
+
+  const results = useMemo(
+    () => (query.length > 0 ? searchFn(query) : []),
+    [query, searchFn],
+  );
 
   return (
     <ScrollView
@@ -71,7 +89,7 @@ export function SearchScreen() {
             Browse by genre
           </Text>
           <View style={styles.genreGrid}>
-            {GENRES.map((g, i) => {
+            {genres.map((g, i) => {
               const tall = i === 0 || i === 3;
               const [start, end] = hueToGradient(g.hue);
               return (
@@ -92,7 +110,23 @@ export function SearchScreen() {
         </>
       )}
 
-      {query.length > 0 && (
+      {query.length > 0 && results.length > 0 && (
+        <View style={styles.resultsList}>
+          {results.map((track) => (
+            <TrackRow
+              key={track.id}
+              track={track}
+              isCurrent={currentTrack?.id === track.id}
+              onPress={() => {
+                play(track.id, results.map((t) => t.id));
+                navigation.navigate('NowPlaying');
+              }}
+            />
+          ))}
+        </View>
+      )}
+
+      {query.length > 0 && results.length === 0 && (
         <View style={styles.emptyResults}>
           <Text style={[styles.emptyTitle, {color: theme.ink3}]}>
             nothing here yet
@@ -175,6 +209,9 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     fontSize: 18,
     color: 'rgba(255,245,225,0.95)',
+  },
+  resultsList: {
+    marginTop: 8,
   },
   emptyResults: {
     paddingVertical: 40,

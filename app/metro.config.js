@@ -6,6 +6,8 @@ const workspaceRoot = path.resolve(__dirname, '..');
 const config = {
   watchFolders: [workspaceRoot],
   resolver: {
+    unstable_enableSymlinks: true,
+    unstable_enablePackageExports: true,
     nodeModulesPaths: [
       path.resolve(__dirname, 'node_modules'),
       path.resolve(workspaceRoot, 'node_modules'),

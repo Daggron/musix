@@ -4,11 +4,11 @@ import {AlbumCover} from './AlbumCover';
 import {FlacChip} from './FlacChip';
 import {IconPlay} from './Icons';
 import {useTheme, FONTS} from '../theme';
-import {fmtTime} from '../data/mockData';
-import type {Song} from '../data/mockData';
+import type {Track} from '../db';
+import {fmtTime} from '../utils';
 
 interface Props {
-  song: Song;
+  track: Track;
   isCurrent?: boolean;
   isPlaying?: boolean;
   onPress?: () => void;
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function TrackRow({
-  song,
+  track,
   isCurrent = false,
   isPlaying = false,
   onPress,
@@ -38,8 +38,8 @@ export function TrackRow({
       ]}>
       <View style={styles.coverWrap}>
         <AlbumCover
-          albumName={song.al}
-          hue={song.hue}
+          albumName={track.album}
+          hue={track.hue}
           size={coverSize}
           radius={5}
         />
@@ -56,17 +56,17 @@ export function TrackRow({
             styles.title,
             {color: isCurrent ? theme.accent : theme.ink},
           ]}>
-          {song.t}
+          {track.title}
         </Text>
         <Text numberOfLines={1} style={[styles.subtitle, {color: theme.ink3}]}>
-          {song.ar}{' '}
-          <Text style={{color: theme.ink4}}>·</Text> {song.al}
+          {track.artist}{' '}
+          <Text style={{color: theme.ink4}}>·</Text> {track.album}
         </Text>
       </View>
       <View style={styles.meta}>
         <FlacChip />
         <Text style={[styles.duration, {color: theme.ink3}]}>
-          {fmtTime(song.d)}
+          {fmtTime(track.duration)}
         </Text>
       </View>
     </Pressable>

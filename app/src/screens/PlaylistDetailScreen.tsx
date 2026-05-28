@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {
   AlbumCover,
@@ -8,7 +8,8 @@ import {
   IconDrag,
 } from '../components';
 import {useTheme, FONTS} from '../theme';
-import {PLAYLISTS, SONGS, fmtTime} from '../data/mockData';
+import {usePlaylistStore, usePlayerStore} from '../store';
+import {fmtTime} from '../utils';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RouteProp} from '@react-navigation/native';
 
@@ -19,18 +20,40 @@ interface Props {
 
 export function PlaylistDetailScreen({navigation, route}: Props) {
   const theme = useTheme();
-  const playlist = PLAYLISTS.find(
-    (p) => p.id === route.params.playlistId,
+  const getPlaylistDetail = usePlaylistStore((s) => s.getPlaylistDetail);
+  const deletePlaylist = usePlaylistStore((s) => s.deletePlaylist);
+  const play = usePlayerStore((s) => s.play);
+
+  const detail = useMemo(
+    () => getPlaylistDetail(route.params.playlistId),
+    [getPlaylistDetail, route.params.playlistId],
   );
 
-  if (!playlist) {
+  if (!detail) {
     return null;
   }
 
-  const items = playlist.songIds
-    .map((id) => SONGS.find((s) => s.id === id))
-    .filter(Boolean);
-  const totalSeconds = items.reduce((a, s) => a + s!.d, 0);
+  const {name, note, tracks} = detail;
+  const totalSeconds = tracks.reduce((a, t) => a + t.duration, 0);
+  const trackIds = tracks.map((t) => t.id);
+
+  const handlePlay = () => {
+    if (trackIds.length === 0) return;
+    usePlayerStore.getState().setQueue(trackIds, 0);
+    navigation.getParent()?.navigate('NowPlaying');
+  };
+
+  const handleShuffle = () => {
+    if (trackIds.length === 0) return;
+    const shuffled = [...trackIds].sort(() => Math.random() - 0.5);
+    usePlayerStore.getState().setQueue(shuffled, 0);
+    navigation.getParent()?.navigate('NowPlaying');
+  };
+
+  const handleDelete = () => {
+    deletePlaylist(route.params.playlistId);
+    navigation.goBack();
+  };
 
   return (
     <ScrollView
@@ -40,29 +63,29 @@ export function PlaylistDetailScreen({navigation, route}: Props) {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <IconBack size={22} color={theme.ink} />
         </Pressable>
-        <Pressable>
+        <Pressable onPress={handleDelete}>
           <Text style={[styles.deleteBtn, {color: theme.accent}]}>DELETE</Text>
         </Pressable>
       </View>
 
       <View style={styles.hero}>
         <View style={styles.coverWrap}>
-          {items.length >= 4 ? (
+          {tracks.length >= 4 ? (
             <View style={styles.mosaic}>
-              {items.slice(0, 4).map((s, i) => (
+              {tracks.slice(0, 4).map((t, i) => (
                 <AlbumCover
                   key={i}
-                  albumName={s!.al}
-                  hue={s!.hue}
+                  albumName={t.album}
+                  hue={t.hue}
                   size={80}
                   radius={0}
                 />
               ))}
             </View>
-          ) : items.length > 0 ? (
+          ) : tracks.length > 0 ? (
             <AlbumCover
-              albumName={items[0]!.al}
-              hue={items[0]!.hue}
+              albumName={tracks[0].album}
+              hue={tracks[0].hue}
               size={160}
               radius={8}
             />
@@ -73,25 +96,27 @@ export function PlaylistDetailScreen({navigation, route}: Props) {
           )}
         </View>
         <Text style={[styles.playlistName, {color: theme.ink}]}>
-          {playlist.name}
+          {name}
         </Text>
-        {playlist.note && (
+        {note ? (
           <Text style={[styles.playlistNote, {color: theme.ink3}]}>
-            {playlist.note}
+            {note}
           </Text>
-        )}
+        ) : null}
         <Text style={[styles.meta, {color: theme.ink4}]}>
-          {items.length} TRACKS · {Math.round(totalSeconds / 60)} MIN
+          {tracks.length} TRACKS · {Math.round(totalSeconds / 60)} MIN
         </Text>
       </View>
 
       <View style={styles.actions}>
         <Pressable
+          onPress={handlePlay}
           style={[styles.playBtn, {backgroundColor: theme.ink}]}>
           <IconPlay size={14} color={theme.paper} />
           <Text style={[styles.actionText, {color: theme.paper}]}>PLAY</Text>
         </Pressable>
         <Pressable
+          onPress={handleShuffle}
           style={[
             styles.shuffleBtn,
             {backgroundColor: theme.card, borderColor: theme.ruleStrong},
@@ -102,14 +127,18 @@ export function PlaylistDetailScreen({navigation, route}: Props) {
       </View>
 
       <View style={styles.trackList}>
-        {items.map((s) => (
+        {tracks.map((t) => (
           <Pressable
-            key={s!.id}
+            key={t.id}
+            onPress={() => {
+              play(t.id, trackIds);
+              navigation.getParent()?.navigate('NowPlaying');
+            }}
             style={[styles.trackRow, {borderBottomColor: theme.rule}]}>
             <IconDrag size={14} color={theme.ink4} />
             <AlbumCover
-              albumName={s!.al}
-              hue={s!.hue}
+              albumName={t.album}
+              hue={t.hue}
               size={36}
               radius={4}
             />
@@ -117,14 +146,14 @@ export function PlaylistDetailScreen({navigation, route}: Props) {
               <Text
                 numberOfLines={1}
                 style={[styles.trackTitle, {color: theme.ink}]}>
-                {s!.t}
+                {t.title}
               </Text>
               <Text style={[styles.trackArtist, {color: theme.ink3}]}>
-                {s!.ar}
+                {t.artist}
               </Text>
             </View>
             <Text style={[styles.trackDuration, {color: theme.ink3}]}>
-              {fmtTime(s!.d)}
+              {fmtTime(t.duration)}
             </Text>
           </Pressable>
         ))}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
@@ -9,9 +9,11 @@ import {
   IconBack,
 } from '../components';
 import {useTheme, FONTS} from '../theme';
-import {PLAYLISTS, SONGS} from '../data/mockData';
-import type {Playlist} from '../data/mockData';
+import {usePlaylistStore} from '../store';
+import {getPlaylistTrackHues} from '../db';
+import type {Playlist} from '../db';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {hueToGradient} from '../theme';
 
 function PlaylistCover({
   playlist,
@@ -20,10 +22,9 @@ function PlaylistCover({
   playlist: Playlist;
   size?: number;
 }) {
-  const ids = playlist.songIds.slice(0, 4);
-  const songs = ids.map((id) => SONGS.find((s) => s.id === id)).filter(Boolean);
+  const hues = getPlaylistTrackHues(playlist.id, 4);
 
-  if (songs.length === 0) {
+  if (hues.length === 0) {
     return (
       <View
         style={{
@@ -36,11 +37,11 @@ function PlaylistCover({
     );
   }
 
-  if (songs.length < 4) {
+  if (hues.length < 4) {
     return (
       <AlbumCover
-        albumName={songs[0]!.al}
-        hue={songs[0]!.hue}
+        albumName={playlist.name}
+        hue={hues[0]}
         size={size}
         radius={8}
       />
@@ -57,11 +58,11 @@ function PlaylistCover({
         flexDirection: 'row',
         flexWrap: 'wrap',
       }}>
-      {songs.slice(0, 4).map((s, i) => (
+      {hues.slice(0, 4).map((h, i) => (
         <AlbumCover
           key={i}
-          albumName={s!.al}
-          hue={s!.hue}
+          albumName=""
+          hue={h}
           size={size / 2}
           radius={0}
         />
@@ -76,6 +77,15 @@ interface Props {
 
 export function PlaylistsScreen({navigation}: Props) {
   const theme = useTheme();
+  const playlists = usePlaylistStore((s) => s.playlists);
+  const likedCount = usePlaylistStore((s) => s.likedCount);
+  const loadPlaylists = usePlaylistStore((s) => s.loadPlaylists);
+  const loadLiked = usePlaylistStore((s) => s.loadLiked);
+
+  useEffect(() => {
+    loadPlaylists();
+    loadLiked();
+  }, [loadPlaylists, loadLiked]);
 
   return (
     <ScrollView
@@ -83,9 +93,12 @@ export function PlaylistsScreen({navigation}: Props) {
       contentContainerStyle={styles.content}>
       <PageHeader
         title="Playlists"
-        kicker={`${PLAYLISTS.length} collections`}
+        kicker={`${playlists.length} collections`}
         right={
           <Pressable
+            onPress={() => {
+              usePlaylistStore.getState().createPlaylist('New Playlist');
+            }}
             style={[
               styles.addBtn,
               {backgroundColor: theme.card, borderColor: theme.ruleStrong},
@@ -113,7 +126,7 @@ export function PlaylistsScreen({navigation}: Props) {
               Liked Songs
             </Text>
             <Text style={[styles.likedSub, {color: theme.ink3}]}>
-              auto-collected favorites
+              {likedCount > 0 ? `${likedCount} tracks` : 'auto-collected favorites'}
             </Text>
           </View>
           <View style={{transform: [{rotate: '180deg'}]}}>
@@ -126,7 +139,7 @@ export function PlaylistsScreen({navigation}: Props) {
         Your playlists
       </Text>
       <View style={styles.playlists}>
-        {PLAYLISTS.map((pl) => (
+        {playlists.map((pl) => (
           <Pressable
             key={pl.id}
             style={[styles.playlistRow, {borderBottomColor: theme.rule}]}
@@ -140,15 +153,15 @@ export function PlaylistsScreen({navigation}: Props) {
                 style={[styles.playlistName, {color: theme.ink}]}>
                 {pl.name}
               </Text>
-              {pl.note && (
+              {pl.note ? (
                 <Text
                   numberOfLines={1}
                   style={[styles.playlistNote, {color: theme.ink3}]}>
                   {pl.note}
                 </Text>
-              )}
+              ) : null}
               <Text style={[styles.playlistCount, {color: theme.ink4}]}>
-                {pl.songIds.length} TRACKS
+                {pl.trackCount} TRACKS
               </Text>
             </View>
             <View style={{transform: [{rotate: '180deg'}]}}>

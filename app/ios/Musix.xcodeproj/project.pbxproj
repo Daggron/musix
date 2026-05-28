@@ -9,12 +9,12 @@
 /* Begin PBXBuildFile section */
 		0C80B921A6F3F58F76C31292 /* libPods-Musix.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-Musix.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		145B32DEBC094C0EA95B708C /* InstrumentSerif-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6849AC7F31A942378C7AA797 /* InstrumentSerif-Regular.ttf */; };
+		3F032DA97A2046BD80CD44A4 /* JetBrainsMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1EEC256D0583484FB40AC5AC /* JetBrainsMono-Variable.ttf */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		D01C991AB346E3990C418EE0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		83B22DF912C64A70AB4301A2 /* InstrumentSerif-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1665842996844A07A96D58DC /* InstrumentSerif-Italic.ttf */; };
-		3F032DA97A2046BD80CD44A4 /* JetBrainsMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1EEC256D0583484FB40AC5AC /* JetBrainsMono-Variable.ttf */; };
-		145B32DEBC094C0EA95B708C /* InstrumentSerif-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6849AC7F31A942378C7AA797 /* InstrumentSerif-Regular.ttf */; };
+		D01C991AB346E3990C418EE0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		FE96F2722145431F8EC55B4A /* DMSans-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 82CF790A407A41AAACFB520D /* DMSans-Variable.ttf */; };
 /* End PBXBuildFile section */
 
@@ -23,16 +23,16 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Musix/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Musix/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = Musix/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1665842996844A07A96D58DC /* InstrumentSerif-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "InstrumentSerif-Italic.ttf"; path = "../src/assets/fonts/InstrumentSerif-Italic.ttf"; sourceTree = "<group>"; };
+		1EEC256D0583484FB40AC5AC /* JetBrainsMono-Variable.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "JetBrainsMono-Variable.ttf"; path = "../src/assets/fonts/JetBrainsMono-Variable.ttf"; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-Musix.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Musix.debug.xcconfig"; path = "Target Support Files/Pods-Musix/Pods-Musix.debug.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-Musix.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Musix.release.xcconfig"; path = "Target Support Files/Pods-Musix/Pods-Musix.release.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-Musix.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Musix.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6849AC7F31A942378C7AA797 /* InstrumentSerif-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "InstrumentSerif-Regular.ttf"; path = "../src/assets/fonts/InstrumentSerif-Regular.ttf"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Musix/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Musix/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		82CF790A407A41AAACFB520D /* DMSans-Variable.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "DMSans-Variable.ttf"; path = "../src/assets/fonts/DMSans-Variable.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		1665842996844A07A96D58DC /* InstrumentSerif-Italic.ttf */ = {isa = PBXFileReference; name = "InstrumentSerif-Italic.ttf"; path = "../src/assets/fonts/InstrumentSerif-Italic.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		1EEC256D0583484FB40AC5AC /* JetBrainsMono-Variable.ttf */ = {isa = PBXFileReference; name = "JetBrainsMono-Variable.ttf"; path = "../src/assets/fonts/JetBrainsMono-Variable.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		6849AC7F31A942378C7AA797 /* InstrumentSerif-Regular.ttf */ = {isa = PBXFileReference; name = "InstrumentSerif-Regular.ttf"; path = "../src/assets/fonts/InstrumentSerif-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		82CF790A407A41AAACFB520D /* DMSans-Variable.ttf */ = {isa = PBXFileReference; name = "DMSans-Variable.ttf"; path = "../src/assets/fonts/DMSans-Variable.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +98,18 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		9385D35C21404B3281137E85 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				1665842996844A07A96D58DC /* InstrumentSerif-Italic.ttf */,
+				1EEC256D0583484FB40AC5AC /* JetBrainsMono-Variable.ttf */,
+				6849AC7F31A942378C7AA797 /* InstrumentSerif-Regular.ttf */,
+				82CF790A407A41AAACFB520D /* DMSans-Variable.ttf */,
+			);
+			name = Resources;
+			path = "";
+			sourceTree = "<group>";
+		};
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -106,18 +118,6 @@
 			);
 			path = Pods;
 			sourceTree = "<group>";
-		};
-		9385D35C21404B3281137E85 /* Resources */ = {
-			isa = "PBXGroup";
-			children = (
-				1665842996844A07A96D58DC /* InstrumentSerif-Italic.ttf */,
-				1EEC256D0583484FB40AC5AC /* JetBrainsMono-Variable.ttf */,
-				6849AC7F31A942378C7AA797 /* InstrumentSerif-Regular.ttf */,
-				82CF790A407A41AAACFB520D /* DMSans-Variable.ttf */,
-			);
-			name = Resources;
-			sourceTree = "<group>";
-			path = "";
 		};
 /* End PBXGroup section */
 

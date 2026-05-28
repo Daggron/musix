@@ -3,6 +3,8 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {initDatabase} from './src/db';
+import {usePlayerStore} from './src/store';
 import {CustomTabBar} from './src/components';
 import {SongsScreen} from './src/screens/SongsScreen';
 import {SearchScreen} from './src/screens/SearchScreen';
@@ -53,6 +55,9 @@ function MainTabs() {
     </Tab.Navigator>
   );
 }
+
+initDatabase();
+usePlayerStore.getState().hydrate();
 
 function App(): React.JSX.Element {
   return (
