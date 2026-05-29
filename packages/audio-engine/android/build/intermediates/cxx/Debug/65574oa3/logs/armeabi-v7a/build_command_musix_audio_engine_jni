@@ -1,0 +1,4 @@
+/Users/abhaysharma/Library/Android/sdk/cmake/3.22.1/bin/ninja \
+  -C \
+  /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/.cxx/Debug/65574oa3/armeabi-v7a \
+  musix_audio_engine_jni

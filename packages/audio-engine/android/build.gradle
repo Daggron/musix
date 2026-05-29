@@ -1,0 +1,46 @@
+plugins {
+    id "com.android.library"
+    id "org.jetbrains.kotlin.android"
+    id "com.facebook.react"
+}
+
+android {
+    namespace "com.musix.audioengine"
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 24
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++20"
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file("CMakeLists.txt")
+            version "3.22.1"
+        }
+    }
+
+    buildFeatures {
+        prefab true
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ["src/main/java"]
+            manifest.srcFile "src/main/AndroidManifest.xml"
+        }
+    }
+}
+
+dependencies {
+    implementation "com.facebook.react:react-android"
+    implementation "com.google.oboe:oboe:1.9.3"
+    implementation "androidx.media:media:1.7.0"
+    implementation "androidx.documentfile:documentfile:1.0.1"
+}

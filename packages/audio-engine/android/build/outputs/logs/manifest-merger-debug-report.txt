@@ -1,0 +1,28 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml:1:1-7:12
+INJECTED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml:1:1-7:12
+	package
+		INJECTED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml:1:11-69
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml:3:5-77
+	android:name
+		ADDED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml:3:22-74
+uses-permission#android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+ADDED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml:4:5-92
+	android:name
+		ADDED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml:4:22-89
+uses-permission#android.permission.WAKE_LOCK
+ADDED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml:5:5-68
+	android:name
+		ADDED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml:5:22-65
+uses-sdk
+INJECTED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml
+INJECTED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/abhaysharma/smallWorkspace/musix/app/node_modules/@musix/audio-engine/android/src/main/AndroidManifest.xml

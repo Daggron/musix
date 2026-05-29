@@ -11,6 +11,7 @@ app/android/build/
 
 # Native builds
 packages/audio-engine/build/
+packages/audio-engine/android/.cxx/
 *.o
 *.a
 *.dylib

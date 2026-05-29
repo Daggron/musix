@@ -2313,7 +2313,7 @@ SPEC CHECKSUMS:
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   hermes-engine: 314be5250afa5692b57b4dd1705959e1973a8ebe
-  musix-audio-engine: 4ecbc8306e4efc59be0faef8c6baa772b815a04f
+  musix-audio-engine: c8f1bcba99084349d4a3a35e2d57998563c1f3d5
   op-sqlite: 24bcc6ddc0c0ddc2159c568978f6b226e08a6245
   RCT-Folly: e78785aa9ba2ed998ea4151e314036f6c49e6d82
   RCTDeprecation: 83ffb90c23ee5cea353bd32008a7bca100908f8c

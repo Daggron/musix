@@ -1,11 +1,11 @@
-import React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import React, {useCallback} from 'react';
+import {NavigationContainer, useNavigation} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {initDatabase} from './src/db';
-import {usePlayerStore} from './src/store';
-import {CustomTabBar} from './src/components';
+import {usePlayerStore, useEQStore} from './src/store';
+import {CustomTabBar, MiniPlayer} from './src/components';
 import {SongsScreen} from './src/screens/SongsScreen';
 import {SearchScreen} from './src/screens/SearchScreen';
 import {PlaylistsScreen} from './src/screens/PlaylistsScreen';
@@ -45,19 +45,29 @@ type RootStackParams = {
 const RootStack = createNativeStackNavigator<RootStackParams>();
 
 function MainTabs() {
+  const navigation = useNavigation<any>();
+  const openNowPlaying = useCallback(
+    () => navigation.navigate('NowPlaying'),
+    [navigation],
+  );
+
   return (
-    <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{headerShown: false}}>
-      <Tab.Screen name="Songs" component={SongsScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Playlists" component={PlaylistsStackScreen} />
-    </Tab.Navigator>
+    <>
+      <Tab.Navigator
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{headerShown: false}}>
+        <Tab.Screen name="Songs" component={SongsScreen} />
+        <Tab.Screen name="Search" component={SearchScreen} />
+        <Tab.Screen name="Playlists" component={PlaylistsStackScreen} />
+      </Tab.Navigator>
+      <MiniPlayer onOpen={openNowPlaying} />
+    </>
   );
 }
 
 initDatabase();
 usePlayerStore.getState().hydrate();
+useEQStore.getState().hydrate();
 
 function App(): React.JSX.Element {
   return (
@@ -69,7 +79,7 @@ function App(): React.JSX.Element {
             name="NowPlaying"
             component={NowPlayingScreen}
             options={{
-              presentation: 'modal',
+              presentation: 'transparentModal',
               animation: 'slide_from_bottom',
             }}
           />

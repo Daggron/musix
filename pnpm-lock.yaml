@@ -25,6 +25,9 @@ importers:
       '@react-navigation/native-stack':
         specifier: ^7.16.0
         version: 7.16.0(@react-navigation/native@7.2.5(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0))(react-native-safe-area-context@5.8.0(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0))(react-native-screens@4.10.0(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0)
+      '@shopify/flash-list':
+        specifier: ^2.3.1
+        version: 2.3.1(@babel/runtime@7.29.7)(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0)
       '@shopify/react-native-skia':
         specifier: ^2.6.4
         version: 2.6.4(react-native-reanimated@3.19.5(@babel/core@7.29.7)(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0)
@@ -1120,6 +1123,13 @@ packages:
 
   '@react-navigation/routers@7.5.5':
     resolution: {integrity: sha512-9/hhMte12Kgu+pMnLfA4EWJ0OQmIEAMVMX06FPH2yGkEQSQ3JhhCN/GkcRikzQhtEi97VYYQA15umptBUShcOQ==}
+
+  '@shopify/flash-list@2.3.1':
+    resolution: {integrity: sha512-7oktg2NQR7KAODjFoDaWe8/OBzyYbdTE3zQTrUBMxjIbxHTHN7UXRX1hX3DHk8KvtkgQdRfZOV8Gjj2l4fGrXw==}
+    peerDependencies:
+      '@babel/runtime': '*'
+      react: '*'
+      react-native: '*'
 
   '@shopify/react-native-skia@2.6.4':
     resolution: {integrity: sha512-PhdBdEApukimzt3tJSqbOqeZnjmfQE6kG9H4XaIUaa9EDNK67nYa2jGDTR1HHChgQDguksg21K4IX0zBh5fjQA==}
@@ -5285,6 +5295,12 @@ snapshots:
   '@react-navigation/routers@7.5.5':
     dependencies:
       nanoid: 3.3.12
+
+  '@shopify/flash-list@2.3.1(@babel/runtime@7.29.7)(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0)':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      react: 19.0.0
+      react-native: 0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0)
 
   '@shopify/react-native-skia@2.6.4(react-native-reanimated@3.19.5(@babel/core@7.29.7)(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.7)(@react-native-community/cli@18.0.0(typescript@5.0.4))(@types/react@19.2.15)(react@19.0.0))(react@19.0.0)':
     dependencies:
