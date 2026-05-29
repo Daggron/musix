@@ -1,5 +1,13 @@
-import React from 'react';
-import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import React, {useCallback, useRef} from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  PanResponder,
+  LayoutChangeEvent,
+} from 'react-native';
 import {IconClose} from '../components';
 import {useTheme, FONTS} from '../theme';
 import {useEQStore, EQ_BANDS, EQ_PRESETS} from '../store';
@@ -7,6 +15,107 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 interface Props {
   navigation: NativeStackNavigationProp<Record<string, object | undefined>>;
+}
+
+function EQSlider({
+  bandIndex,
+  value,
+  enabled,
+}: {
+  bandIndex: number;
+  value: number;
+  enabled: boolean;
+}) {
+  const theme = useTheme();
+  const setLevel = useEQStore((s) => s.setLevel);
+  const trackHeight = useRef(0);
+  const startValueRef = useRef(value);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
+
+  const onLayout = useCallback((e: LayoutChangeEvent) => {
+    trackHeight.current = e.nativeEvent.layout.height;
+  }, []);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => enabledRef.current,
+      onMoveShouldSetPanResponder: () => enabledRef.current,
+      onPanResponderGrant: () => {
+        startValueRef.current = useEQStore.getState().levels[bandIndex];
+      },
+      onPanResponderMove: (_evt, gestureState) => {
+        if (trackHeight.current === 0) return;
+        const dbPerPixel = 12 / (trackHeight.current / 2);
+        const delta = -gestureState.dy * dbPerPixel;
+        const newValue = Math.round(
+          Math.max(-6, Math.min(6, startValueRef.current + delta)),
+        );
+        setLevel(bandIndex, newValue);
+      },
+      onPanResponderRelease: () => {},
+    }),
+  ).current;
+
+  const pct = (value + 6) / 12;
+  const zeroPct = 6 / 12;
+
+  return (
+    <View style={styles.band}>
+      <Text
+        style={[
+          styles.bandValue,
+          {color: value >= 0 ? theme.ink2 : theme.ink3},
+        ]}>
+        {value >= 0 ? '+' : ''}
+        {value}
+      </Text>
+      <View
+        style={styles.sliderTrack}
+        onLayout={onLayout}
+        {...panResponder.panHandlers}>
+        <View
+          style={[styles.sliderRail, {backgroundColor: theme.ruleStrong}]}>
+          <View
+            style={[
+              styles.sliderFill,
+              {
+                backgroundColor: theme.accent,
+                top:
+                  value >= 0
+                    ? `${(1 - pct) * 100}%`
+                    : `${(1 - zeroPct) * 100}%`,
+                bottom:
+                  value >= 0 ? `${zeroPct * 100}%` : `${pct * 100}%`,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.zeroTick,
+              {
+                backgroundColor: theme.ruleStrong,
+                top: `${(1 - zeroPct) * 100}%`,
+              },
+            ]}
+          />
+        </View>
+        <View
+          style={[
+            styles.sliderThumb,
+            {
+              backgroundColor: theme.paper,
+              borderColor: theme.accent,
+              top: `${(1 - pct) * 100}%`,
+            },
+          ]}
+        />
+      </View>
+      <Text style={[styles.bandLabel, {color: theme.ink4}]}>
+        {EQ_BANDS[bandIndex]}
+      </Text>
+    </View>
+  );
 }
 
 export function EqualizerScreen({navigation}: Props) {
@@ -81,62 +190,9 @@ export function EqualizerScreen({navigation}: Props) {
       </ScrollView>
 
       <View style={[styles.sliders, {opacity: enabled ? 1 : 0.4}]}>
-        {levels.map((v, i) => {
-          const pct = (v + 6) / 12;
-          const zeroPct = 6 / 12;
-          return (
-            <View key={i} style={styles.band}>
-              <Text
-                style={[
-                  styles.bandValue,
-                  {color: v >= 0 ? theme.ink2 : theme.ink3},
-                ]}>
-                {v >= 0 ? '+' : ''}
-                {v}
-              </Text>
-              <View style={styles.sliderTrack}>
-                <View
-                  style={[
-                    styles.sliderRail,
-                    {backgroundColor: theme.ruleStrong},
-                  ]}>
-                  <View
-                    style={[
-                      styles.sliderFill,
-                      {
-                        backgroundColor: theme.accent,
-                        top: v >= 0 ? `${(1 - pct) * 100}%` : `${(1 - zeroPct) * 100}%`,
-                        bottom: v >= 0 ? `${zeroPct * 100}%` : `${pct * 100}%`,
-                      },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.zeroTick,
-                      {
-                        backgroundColor: theme.ruleStrong,
-                        top: `${(1 - zeroPct) * 100}%`,
-                      },
-                    ]}
-                  />
-                </View>
-                <View
-                  style={[
-                    styles.sliderThumb,
-                    {
-                      backgroundColor: theme.paper,
-                      borderColor: theme.accent,
-                      top: `${(1 - pct) * 100}%`,
-                    },
-                  ]}
-                />
-              </View>
-              <Text style={[styles.bandLabel, {color: theme.ink4}]}>
-                {EQ_BANDS[i]}
-              </Text>
-            </View>
-          );
-        })}
+        {levels.map((v, i) => (
+          <EQSlider key={i} bandIndex={i} value={v} enabled={enabled} />
+        ))}
       </View>
 
       <View style={styles.footer}>

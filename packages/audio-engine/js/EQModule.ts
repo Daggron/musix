@@ -1,21 +1,29 @@
-import type { EQModule, EQPreset } from './types';
+import {Platform, TurboModuleRegistry} from 'react-native';
+import type {EQModule} from './types';
 
-const PRESET_VALUES: Record<EQPreset, number[]> = {
-  default: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  studio: [0, 0, 0, 0, 0, 1, 1, 2, 2, 1],
-  vinyl: [3, 2, 1, 0, -1, -2, -2, -1, -2, -3],
+function getNativeModule() {
+  try {
+    return TurboModuleRegistry.getEnforcing<any>('MusixEQModule');
+  } catch {
+    return null;
+  }
+}
+
+const native = Platform.OS !== 'web' ? getNativeModule() : null;
+
+const eqModule: EQModule = {
+  setEnabled(enabled: boolean): void {
+    native?.setEnabled(enabled);
+  },
+
+  setBandGains(gains: number[]): void {
+    native?.setBandGains(gains);
+  },
+
+  getBandGains(): number[] {
+    if (!native) return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    return native.getBandGains();
+  },
 };
 
-let currentPreset: EQPreset = 'default';
-
-const stub: EQModule = {
-  setEnabled(_enabled: boolean): void {},
-  setPreset(preset: EQPreset): void {
-    currentPreset = preset;
-  },
-  getBandValues(): number[] {
-    return [...PRESET_VALUES[currentPreset]];
-  },
-};
-
-export default stub;
+export default eqModule;

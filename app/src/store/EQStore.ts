@@ -1,5 +1,6 @@
 import {create} from 'zustand';
 import {MMKV} from 'react-native-mmkv';
+import {EQModule} from '@musix/audio-engine';
 
 const storage = new MMKV({id: 'eq'});
 
@@ -24,6 +25,11 @@ function readLevels(): number[] {
   return [...EQ_PRESETS.Studio];
 }
 
+function syncToNative(enabled: boolean, levels: number[]): void {
+  EQModule.setEnabled(enabled);
+  EQModule.setBandGains(levels);
+}
+
 interface EQState {
   enabled: boolean;
   preset: string;
@@ -33,6 +39,7 @@ interface EQState {
   toggleEnabled: () => void;
   applyPreset: (name: string) => void;
   setLevel: (bandIndex: number, value: number) => void;
+  hydrate: () => void;
 }
 
 export const useEQStore = create<EQState>((set, get) => ({
@@ -42,12 +49,14 @@ export const useEQStore = create<EQState>((set, get) => ({
 
   setEnabled: (enabled) => {
     storage.set('enabled', enabled);
+    EQModule.setEnabled(enabled);
     set({enabled});
   },
 
   toggleEnabled: () => {
     const next = !get().enabled;
     storage.set('enabled', next);
+    EQModule.setEnabled(next);
     set({enabled: next});
   },
 
@@ -55,6 +64,7 @@ export const useEQStore = create<EQState>((set, get) => ({
     const levels = EQ_PRESETS[name] ? [...EQ_PRESETS[name]] : get().levels;
     storage.set('preset', name);
     storage.set('levels', JSON.stringify(levels));
+    EQModule.setBandGains(levels);
     set({preset: name, levels});
   },
 
@@ -63,6 +73,12 @@ export const useEQStore = create<EQState>((set, get) => ({
     levels[bandIndex] = value;
     storage.set('levels', JSON.stringify(levels));
     storage.set('preset', 'Custom');
+    EQModule.setBandGains(levels);
     set({levels, preset: 'Custom'});
+  },
+
+  hydrate: () => {
+    const {enabled, levels} = get();
+    syncToNative(enabled, levels);
   },
 }));
