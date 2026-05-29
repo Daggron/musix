@@ -55,6 +55,7 @@ export function AddMusicScreen({navigation}: Props) {
           genre: meta.genre,
           hue: meta.hue,
           filePath: meta.filePath,
+          artworkPath: meta.artworkPath,
         });
         count++;
       } catch {}

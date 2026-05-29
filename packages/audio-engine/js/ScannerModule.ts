@@ -31,6 +31,7 @@ const scannerModule: ScannerModule = {
         filePath,
         fileSize: 0,
         hue: 0,
+        artworkPath: null,
       };
     }
     const json = await native.getMetadata(filePath);

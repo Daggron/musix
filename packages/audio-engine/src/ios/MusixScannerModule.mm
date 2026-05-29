@@ -195,6 +195,13 @@ RCT_EXPORT_MODULE(MusixScannerModule)
     NSUInteger hue = [self hueForAlbum:album];
     meta[@"hue"] = @(hue);
 
+    NSString *artworkPath = [self extractArtwork:asset filePath:filePath];
+    if (artworkPath) {
+      meta[@"artworkPath"] = artworkPath;
+    } else {
+      meta[@"artworkPath"] = [NSNull null];
+    }
+
     NSError *jsonErr = nil;
     NSData *jsonData =
         [NSJSONSerialization dataWithJSONObject:meta options:0 error:&jsonErr];
@@ -205,6 +212,46 @@ RCT_EXPORT_MODULE(MusixScannerModule)
 
     resolve(jsonStr);
   });
+}
+
+- (NSString *)extractArtwork:(AVURLAsset *)asset filePath:(NSString *)filePath {
+  NSString *artworkDir = [[self documentsPath] stringByAppendingPathComponent:@"Artwork"];
+  [[NSFileManager defaultManager] createDirectoryAtPath:artworkDir
+                            withIntermediateDirectories:YES
+                                            attributes:nil
+                                                 error:nil];
+
+  NSString *baseName = [[filePath lastPathComponent] stringByDeletingPathExtension];
+  NSString *destPath = [artworkDir stringByAppendingPathComponent:
+                         [baseName stringByAppendingString:@".jpg"]];
+
+  if ([[NSFileManager defaultManager] fileExistsAtPath:destPath]) {
+    return destPath;
+  }
+
+  for (NSString *format in asset.availableMetadataFormats) {
+    NSArray<AVMetadataItem *> *items = [asset metadataForFormat:format];
+    for (AVMetadataItem *item in items) {
+      if ([item.commonKey isEqualToString:AVMetadataCommonKeyArtwork]) {
+        NSData *rawData = nil;
+        if ([item.value isKindOfClass:[NSData class]]) {
+          rawData = (NSData *)item.value;
+        } else if ([item.dataValue length] > 0) {
+          rawData = item.dataValue;
+        }
+        if (rawData) {
+          UIImage *img = [UIImage imageWithData:rawData];
+          if (img) {
+            NSData *jpeg = UIImageJPEGRepresentation(img, 0.85);
+            if (jpeg && [jpeg writeToFile:destPath atomically:YES]) {
+              return destPath;
+            }
+          }
+        }
+      }
+    }
+  }
+  return nil;
 }
 
 - (NSUInteger)hueForAlbum:(NSString *)album {
