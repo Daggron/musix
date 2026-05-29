@@ -11,11 +11,18 @@ app/android/build/
 
 # Native builds
 packages/audio-engine/build/
+packages/audio-engine/android/build/
 packages/audio-engine/android/.cxx/
+packages/audio-engine/android/.gradle/
 *.o
 *.a
 *.dylib
 *.so
+
+# Release artifacts
+*.apk
+*.aab
+*.ipa
 
 # IDE
 .idea/
@@ -23,12 +30,28 @@ packages/audio-engine/android/.cxx/
 *.xcworkspace
 *.xcuserdata
 
+# Signing keys
+*.keystore
+!app/android/app/debug.keystore
+
 # Environment
 .env
 .env.*
 
 # Metro
 .metro-health-check*
+
+# Ruby / Bundler
+vendor/bundle/
+.bundle/
+
+# Testing
+coverage/
+
+# Temporary
+*.tmp
+*.swp
+*~
 
 # Claude Code local settings
 .claude/settings.local.json
