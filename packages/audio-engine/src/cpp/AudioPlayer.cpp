@@ -20,6 +20,7 @@ bool AudioPlayer::loadTrack(const std::string &filePath) {
   framesConsumed_.store(0);
   trackEnded_.store(false);
   trackTransitioned_.store(false);
+  eq_.setSampleRate(current_->decoder.sampleRate());
   return true;
 }
 
@@ -127,6 +128,11 @@ uint32_t AudioPlayer::pullAudio(float *buffer, uint32_t frames) {
         trackEnded_.store(true, std::memory_order_release);
       }
     }
+  }
+
+  if (totalRead > 0) {
+    uint32_t ch = current_ ? current_->decoder.channels() : 2;
+    eq_.process(buffer, totalRead, ch);
   }
 
   return totalRead;

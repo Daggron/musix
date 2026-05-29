@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BiquadEQ.h"
 #include "TrackBuffer.h"
 
 #include <atomic>
@@ -60,6 +61,8 @@ public:
            static_cast<double>(current_->decoder.sampleRate()) * 1000.0;
   }
 
+  BiquadEQ &eq() { return eq_; }
+
 private:
   std::unique_ptr<TrackBuffer> current_;
   std::unique_ptr<TrackBuffer> next_;
@@ -69,6 +72,8 @@ private:
   std::atomic<bool> trackEnded_{false};
   std::atomic<bool> trackTransitioned_{false};
   std::atomic<uint64_t> framesConsumed_{0};
+
+  BiquadEQ eq_;
 };
 
 } // namespace musix

@@ -81,6 +81,32 @@ RCT_EXPORT_MODULE(MusixPlayerModule)
   return paths.firstObject ?: @"";
 }
 
+- (void)setNowPlaying:(NSString *)title
+               artist:(NSString *)artist
+                album:(NSString *)album
+          durationSec:(double)durationSec {
+  [[MusixAudioEngine shared] setNowPlayingTitle:title
+                                         artist:artist
+                                          album:album
+                                       duration:durationSec];
+}
+
+- (void)updateNowPlayingElapsed:(double)elapsedSec rate:(double)rate {
+  [[MusixAudioEngine shared] updateNowPlayingElapsed:elapsedSec rate:(float)rate];
+}
+
+- (NSNumber *)hasRemotePlay { return @([[MusixAudioEngine shared] hasRemotePlay]); }
+- (void)clearRemotePlay { [[MusixAudioEngine shared] clearRemotePlay]; }
+- (NSNumber *)hasRemotePause { return @([[MusixAudioEngine shared] hasRemotePause]); }
+- (void)clearRemotePause { [[MusixAudioEngine shared] clearRemotePause]; }
+- (NSNumber *)hasRemoteNext { return @([[MusixAudioEngine shared] hasRemoteNext]); }
+- (void)clearRemoteNext { [[MusixAudioEngine shared] clearRemoteNext]; }
+- (NSNumber *)hasRemotePrev { return @([[MusixAudioEngine shared] hasRemotePrev]); }
+- (void)clearRemotePrev { [[MusixAudioEngine shared] clearRemotePrev]; }
+- (NSNumber *)hasRemoteSeek { return @([[MusixAudioEngine shared] hasRemoteSeek]); }
+- (void)clearRemoteSeek { [[MusixAudioEngine shared] clearRemoteSeek]; }
+- (NSNumber *)remoteSeekPositionMs { return @([[MusixAudioEngine shared] remoteSeekPositionMs]); }
+
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
     (const facebook::react::ObjCTurboModule::InitParams &)params {
   return std::make_shared<facebook::react::NativePlayerModuleSpecJSI>(params);

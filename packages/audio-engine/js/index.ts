@@ -5,7 +5,6 @@ export type {
   PlayerModule as PlayerModuleType,
   ScannerModule as ScannerModuleType,
   EQModule as EQModuleType,
-  EQPreset,
   TrackMetadata,
   WatchedFolder,
 } from './types';

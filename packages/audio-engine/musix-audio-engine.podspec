@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.platforms       = { :ios => "15.1" }
   s.source          = { :git => "https://github.com/musix/audio-engine.git", :tag => s.version }
   s.source_files    = "src/ios/**/*.{h,m,mm}", "src/cpp/**/*.{h,cpp}"
-  s.frameworks      = "AVFoundation", "AudioToolbox"
+  s.frameworks      = "AVFoundation", "AudioToolbox", "MediaPlayer"
 
   s.pod_target_xcconfig = {
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",

@@ -10,6 +10,7 @@ export interface TrackMetadata {
   filePath: string;
   fileSize: number;
   hue: number;
+  artworkPath: string | null;
 }
 
 export interface PlayerModule {
@@ -28,6 +29,21 @@ export interface PlayerModule {
   clearTrackTransitioned(): void;
   wasInterrupted(): boolean;
   clearInterrupted(): void;
+
+  setNowPlaying(title: string, artist: string, album: string, durationSec: number): void;
+  updateNowPlayingElapsed(elapsedSec: number, rate: number): void;
+
+  hasRemotePlay(): boolean;
+  clearRemotePlay(): void;
+  hasRemotePause(): boolean;
+  clearRemotePause(): void;
+  hasRemoteNext(): boolean;
+  clearRemoteNext(): void;
+  hasRemotePrev(): boolean;
+  clearRemotePrev(): void;
+  hasRemoteSeek(): boolean;
+  clearRemoteSeek(): void;
+  remoteSeekPositionMs(): number;
 }
 
 export interface WatchedFolder {
@@ -44,10 +60,8 @@ export interface ScannerModule {
   getWatchedFolders(): WatchedFolder[];
 }
 
-export type EQPreset = 'default' | 'studio' | 'vinyl';
-
 export interface EQModule {
   setEnabled(enabled: boolean): void;
-  setPreset(preset: EQPreset): void;
-  getBandValues(): number[];
+  setBandGains(gains: number[]): void;
+  getBandGains(): number[];
 }

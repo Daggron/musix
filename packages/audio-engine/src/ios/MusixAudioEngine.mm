@@ -1,7 +1,9 @@
 #import "MusixAudioEngine.h"
 
 #import <AVFoundation/AVFoundation.h>
+#import <MediaPlayer/MediaPlayer.h>
 #import <cstring>
+#import <vector>
 
 #include "AudioPlayer.h"
 
@@ -11,6 +13,13 @@
   musix::AudioPlayer _player;
   BOOL _interrupted;
   BOOL _playingBeforeInterruption;
+
+  BOOL _remotePlay;
+  BOOL _remotePause;
+  BOOL _remoteNext;
+  BOOL _remotePrev;
+  BOOL _remoteSeek;
+  double _remoteSeekPositionMs;
 }
 
 + (instancetype)shared {
@@ -27,9 +36,16 @@
   if (self) {
     _interrupted = NO;
     _playingBeforeInterruption = NO;
+    _remotePlay = NO;
+    _remotePause = NO;
+    _remoteNext = NO;
+    _remotePrev = NO;
+    _remoteSeek = NO;
+    _remoteSeekPositionMs = 0;
     [self configureAudioSession];
     [self setupEngine];
     [self observeNotifications];
+    [self registerRemoteCommands];
   }
   return self;
 }
@@ -83,7 +99,7 @@
       initWithCommonFormat:AVAudioPCMFormatFloat32
                 sampleRate:(double)sampleRate
                   channels:channels
-               interleaved:YES];
+               interleaved:NO];
 
   __weak MusixAudioEngine *weakSelf = self;
 
@@ -101,7 +117,8 @@
            }
            return [strongSelf renderFrames:frameCount
                                       into:outputData
-                                 isSilence:isSilence];
+                                 isSilence:isSilence
+                                  channels:channels];
          }];
 
   [_engine attachNode:_sourceNode];
@@ -110,19 +127,34 @@
 
 - (OSStatus)renderFrames:(AVAudioFrameCount)frameCount
                     into:(AudioBufferList *)outputData
-               isSilence:(BOOL *)isSilence {
-  float *outBuffer = (float *)outputData->mBuffers[0].mData;
+               isSilence:(BOOL *)isSilence
+                channels:(uint32_t)channels {
+  // pullAudio returns interleaved data; deinterleave into the output buffers
+  std::vector<float> interleaved(frameCount * channels);
+  uint32_t framesRead = _player.pullAudio(interleaved.data(), frameCount);
 
-  uint32_t framesRead = _player.pullAudio(outBuffer, frameCount);
-
-  if (framesRead < frameCount) {
-    uint32_t ch = _player.channels();
-    if (ch == 0) ch = 1;
-    std::memset(outBuffer + framesRead * ch, 0,
-                (frameCount - framesRead) * ch * sizeof(float));
+  if (framesRead == 0) {
+    for (uint32_t ch = 0; ch < outputData->mNumberBuffers; ch++) {
+      std::memset(outputData->mBuffers[ch].mData, 0,
+                  frameCount * sizeof(float));
+    }
+    *isSilence = YES;
+    return noErr;
   }
 
-  *isSilence = (framesRead == 0);
+  for (uint32_t ch = 0; ch < outputData->mNumberBuffers && ch < channels;
+       ch++) {
+    float *dst = (float *)outputData->mBuffers[ch].mData;
+    for (uint32_t f = 0; f < framesRead; f++) {
+      dst[f] = interleaved[f * channels + ch];
+    }
+    if (framesRead < frameCount) {
+      std::memset(dst + framesRead, 0,
+                  (frameCount - framesRead) * sizeof(float));
+    }
+  }
+
+  *isSilence = NO;
   return noErr;
 }
 
@@ -239,6 +271,18 @@
   }
 }
 
+- (void)setEQEnabled:(BOOL)enabled {
+  _player.eq().setEnabled(enabled);
+}
+
+- (void)setEQBandGains:(const float *)gains count:(int)count {
+  _player.eq().setBandGains(gains, count);
+}
+
+- (void)getEQBandGains:(float *)out count:(int)count {
+  _player.eq().getBandGains(out, count);
+}
+
 - (void)handleRouteChange:(NSNotification *)notification {
   NSDictionary *info = notification.userInfo;
   AVAudioSessionRouteChangeReason reason =
@@ -251,5 +295,86 @@
     }
   }
 }
+
+#pragma mark - Remote Commands
+
+- (void)registerRemoteCommands {
+  MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
+
+  [cc.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+    self->_remotePlay = YES;
+    return MPRemoteCommandHandlerStatusSuccess;
+  }];
+
+  [cc.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+    self->_remotePause = YES;
+    return MPRemoteCommandHandlerStatusSuccess;
+  }];
+
+  [cc.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+    if (self->_player.isPlaying()) {
+      self->_remotePause = YES;
+    } else {
+      self->_remotePlay = YES;
+    }
+    return MPRemoteCommandHandlerStatusSuccess;
+  }];
+
+  [cc.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+    self->_remoteNext = YES;
+    return MPRemoteCommandHandlerStatusSuccess;
+  }];
+
+  [cc.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+    self->_remotePrev = YES;
+    return MPRemoteCommandHandlerStatusSuccess;
+  }];
+
+  [cc.changePlaybackPositionCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+    MPChangePlaybackPositionCommandEvent *posEvent = (MPChangePlaybackPositionCommandEvent *)event;
+    self->_remoteSeekPositionMs = posEvent.positionTime * 1000.0;
+    self->_remoteSeek = YES;
+    return MPRemoteCommandHandlerStatusSuccess;
+  }];
+}
+
+#pragma mark - Now Playing Info
+
+- (void)setNowPlayingTitle:(NSString *)title
+                    artist:(NSString *)artist
+                     album:(NSString *)album
+                  duration:(double)durationSec {
+  NSMutableDictionary *info = [NSMutableDictionary dictionary];
+  info[MPMediaItemPropertyTitle] = title ?: @"";
+  info[MPMediaItemPropertyArtist] = artist ?: @"";
+  info[MPMediaItemPropertyAlbumTitle] = album ?: @"";
+  info[MPMediaItemPropertyPlaybackDuration] = @(durationSec);
+  info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = @(0);
+  info[MPNowPlayingInfoPropertyPlaybackRate] = @(_player.isPlaying() ? 1.0 : 0.0);
+  [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = info;
+}
+
+- (void)updateNowPlayingElapsed:(double)elapsedSec rate:(float)rate {
+  NSMutableDictionary *info =
+      [[MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo mutableCopy];
+  if (!info) return;
+  info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = @(elapsedSec);
+  info[MPNowPlayingInfoPropertyPlaybackRate] = @(rate);
+  [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = info;
+}
+
+#pragma mark - Remote Command Flags
+
+- (BOOL)hasRemotePlay { return _remotePlay; }
+- (void)clearRemotePlay { _remotePlay = NO; }
+- (BOOL)hasRemotePause { return _remotePause; }
+- (void)clearRemotePause { _remotePause = NO; }
+- (BOOL)hasRemoteNext { return _remoteNext; }
+- (void)clearRemoteNext { _remoteNext = NO; }
+- (BOOL)hasRemotePrev { return _remotePrev; }
+- (void)clearRemotePrev { _remotePrev = NO; }
+- (BOOL)hasRemoteSeek { return _remoteSeek; }
+- (void)clearRemoteSeek { _remoteSeek = NO; }
+- (double)remoteSeekPositionMs { return _remoteSeekPositionMs; }
 
 @end

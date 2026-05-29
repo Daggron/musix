@@ -18,6 +18,21 @@ export interface Spec extends TurboModule {
   wasInterrupted(): boolean;
   clearInterrupted(): void;
   getDocumentsPath(): string;
+
+  setNowPlaying(title: string, artist: string, album: string, durationSec: number): void;
+  updateNowPlayingElapsed(elapsedSec: number, rate: number): void;
+
+  hasRemotePlay(): boolean;
+  clearRemotePlay(): void;
+  hasRemotePause(): boolean;
+  clearRemotePause(): void;
+  hasRemoteNext(): boolean;
+  clearRemoteNext(): void;
+  hasRemotePrev(): boolean;
+  clearRemotePrev(): void;
+  hasRemoteSeek(): boolean;
+  clearRemoteSeek(): void;
+  remoteSeekPositionMs(): number;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('MusixPlayerModule');

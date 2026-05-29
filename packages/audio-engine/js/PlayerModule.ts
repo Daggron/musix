@@ -78,6 +78,26 @@ const playerModule: PlayerModule = {
   clearInterrupted(): void {
     native?.clearInterrupted();
   },
+
+  setNowPlaying(title: string, artist: string, album: string, durationSec: number): void {
+    native?.setNowPlaying(title, artist, album, durationSec);
+  },
+
+  updateNowPlayingElapsed(elapsedSec: number, rate: number): void {
+    native?.updateNowPlayingElapsed(elapsedSec, rate);
+  },
+
+  hasRemotePlay(): boolean { return native?.hasRemotePlay() ?? false; },
+  clearRemotePlay(): void { native?.clearRemotePlay(); },
+  hasRemotePause(): boolean { return native?.hasRemotePause() ?? false; },
+  clearRemotePause(): void { native?.clearRemotePause(); },
+  hasRemoteNext(): boolean { return native?.hasRemoteNext() ?? false; },
+  clearRemoteNext(): void { native?.clearRemoteNext(); },
+  hasRemotePrev(): boolean { return native?.hasRemotePrev() ?? false; },
+  clearRemotePrev(): void { native?.clearRemotePrev(); },
+  hasRemoteSeek(): boolean { return native?.hasRemoteSeek() ?? false; },
+  clearRemoteSeek(): void { native?.clearRemoteSeek(); },
+  remoteSeekPositionMs(): number { return native?.remoteSeekPositionMs() ?? 0; },
 };
 
 export default playerModule;
