@@ -197,15 +197,6 @@ export function CassettePlayer({
           color="rgba(255,255,255,0.25)"
         />
 
-        {/* Shell bottom shadow */}
-        <Rect
-          x={0}
-          y={h - 4}
-          width={w}
-          height={4}
-          color="rgba(0,0,0,0.18)"
-        />
-
         {/* Screws */}
         {screwPositions.map((sp, i) => (
           <React.Fragment key={`screw${i}`}>
@@ -502,44 +493,6 @@ export function CassettePlayer({
             />
           );
         })}
-
-        {/* Write-protection tab notches */}
-        <RoundedRect
-          x={6}
-          y={h - 14}
-          width={10}
-          height={8}
-          r={2}
-          color="rgba(0,0,0,0.2)"
-        />
-        <RoundedRect
-          x={6}
-          y={h - 14}
-          width={10}
-          height={8}
-          r={2}
-          style="stroke"
-          strokeWidth={0.5}
-          color="rgba(0,0,0,0.15)"
-        />
-        <RoundedRect
-          x={w - 16}
-          y={h - 14}
-          width={10}
-          height={8}
-          r={2}
-          color="rgba(0,0,0,0.2)"
-        />
-        <RoundedRect
-          x={w - 16}
-          y={h - 14}
-          width={10}
-          height={8}
-          r={2}
-          style="stroke"
-          strokeWidth={0.5}
-          color="rgba(0,0,0,0.15)"
-        />
 
         {/* Embossed brand text */}
         {monoFont && (
