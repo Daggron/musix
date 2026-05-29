@@ -4,4 +4,5 @@ export {TrackRow} from './TrackRow';
 export {MiniPlayer} from './MiniPlayer';
 export {PageHeader} from './PageHeader';
 export {CustomTabBar} from './CustomTabBar';
+export {CassettePlayer} from './CassettePlayer';
 export * from './Icons';

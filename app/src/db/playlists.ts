@@ -79,6 +79,7 @@ export function getPlaylistTracks(playlistId: string): Track[] {
     genre: r.genre as string,
     hue: r.hue as number,
     filePath: (r.file_path as string) ?? null,
+    artworkPath: (r.artwork_path as string) ?? null,
     addedAt: r.added_at as number,
   }));
 }

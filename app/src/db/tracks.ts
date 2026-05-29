@@ -1,4 +1,5 @@
 import {getDb} from './connection';
+import {toRelativePath, toAbsolutePath} from '../utils';
 
 export interface Track {
   id: string;
@@ -11,6 +12,7 @@ export interface Track {
   genre: string;
   hue: number;
   filePath: string | null;
+  artworkPath: string | null;
   addedAt: number;
 }
 
@@ -25,7 +27,8 @@ function rowToTrack(row: Record<string, unknown>): Track {
     bitrate: row.bitrate as number,
     genre: row.genre as string,
     hue: row.hue as number,
-    filePath: (row.file_path as string) ?? null,
+    filePath: row.file_path ? toAbsolutePath(row.file_path as string) : null,
+    artworkPath: (row.artwork_path as string) ?? null,
     addedAt: row.added_at as number,
   };
 }
@@ -101,8 +104,8 @@ export function getGenres(): {label: string; hue: number; count: number}[] {
 
 export function insertTrack(track: Omit<Track, 'addedAt'>): void {
   getDb().executeSync(
-    `INSERT OR REPLACE INTO tracks (id, title, artist, album, year, duration, bitrate, genre, hue, file_path)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO tracks (id, title, artist, album, year, duration, bitrate, genre, hue, file_path, artwork_path)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       track.id,
       track.title,
@@ -113,7 +116,8 @@ export function insertTrack(track: Omit<Track, 'addedAt'>): void {
       track.bitrate,
       track.genre,
       track.hue,
-      track.filePath ?? null,
+      track.filePath ? toRelativePath(track.filePath) : null,
+      track.artworkPath ?? null,
     ],
   );
 }

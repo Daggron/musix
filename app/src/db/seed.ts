@@ -64,7 +64,7 @@ export function seedIfEmpty(): void {
   if ((rows[0]?.count as number) > 0) return;
 
   for (const t of SEED_TRACKS) {
-    insertTrack({...t, filePath: null});
+    insertTrack({...t, filePath: null, artworkPath: null});
   }
 
   for (const p of SEED_PLAYLISTS) {

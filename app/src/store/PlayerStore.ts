@@ -99,10 +99,55 @@ function preloadNextInQueue(queue: string[], queueIndex: number, repeat: RepeatM
 
 let syncInterval: ReturnType<typeof setInterval> | null = null;
 
+function setNowPlayingForTrack(track: Track, durationMs: number): void {
+  PlayerModule.setNowPlaying(
+    track.title,
+    track.artist,
+    track.album,
+    durationMs / 1000,
+  );
+}
+
 function startSync(get: () => PlayerState): void {
   stopSync();
   syncInterval = setInterval(() => {
     const state = get();
+
+    if (PlayerModule.hasRemotePlay()) {
+      PlayerModule.clearRemotePlay();
+      if (!state.isPlaying) {
+        usePlayerStore.getState().resume();
+      }
+      return;
+    }
+
+    if (PlayerModule.hasRemotePause()) {
+      PlayerModule.clearRemotePause();
+      if (state.isPlaying) {
+        usePlayerStore.getState().pause();
+      }
+      return;
+    }
+
+    if (PlayerModule.hasRemoteNext()) {
+      PlayerModule.clearRemoteNext();
+      usePlayerStore.getState().next();
+      return;
+    }
+
+    if (PlayerModule.hasRemotePrev()) {
+      PlayerModule.clearRemotePrev();
+      usePlayerStore.getState().prev();
+      return;
+    }
+
+    if (PlayerModule.hasRemoteSeek()) {
+      PlayerModule.clearRemoteSeek();
+      const seekMs = PlayerModule.remoteSeekPositionMs();
+      usePlayerStore.getState().seekTo(seekMs);
+      return;
+    }
+
     if (!state.isPlaying) return;
 
     const positionMs = PlayerModule.getPositionMs();
@@ -128,6 +173,7 @@ function startSync(get: () => PlayerState): void {
           positionMs: 0,
           durationMs: PlayerModule.getDurationMs(),
         });
+        setNowPlayingForTrack(nextTrack, PlayerModule.getDurationMs());
         preloadNextInQueue(queue, nextIndex, repeat, isShuffle);
         saveResume(usePlayerStore.getState());
       }
@@ -144,10 +190,12 @@ function startSync(get: () => PlayerState): void {
       PlayerModule.clearInterrupted();
       stopSync();
       usePlayerStore.setState({isPlaying: false});
+      PlayerModule.updateNowPlayingElapsed(positionMs / 1000, 0);
       saveResume(usePlayerStore.getState());
       return;
     }
 
+    PlayerModule.updateNowPlayingElapsed(positionMs / 1000, 1);
     usePlayerStore.setState({positionMs, durationMs});
   }, 250);
 }
@@ -184,6 +232,19 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         repeat: r.repeat,
         isPlaying: false,
       });
+
+      if (track?.filePath) {
+        PlayerModule.loadTrack(track.filePath)
+          .then(() => {
+            PlayerModule.seekToFrame(r.positionMs);
+            const dur = PlayerModule.getDurationMs();
+            set({durationMs: dur});
+            setNowPlayingForTrack(track, dur);
+            PlayerModule.updateNowPlayingElapsed(r.positionMs / 1000, 0);
+            startSync(get);
+          })
+          .catch(() => {});
+      }
     },
 
     play: (trackId, queue) => {
@@ -212,26 +273,35 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         PlayerModule.loadTrack(track.filePath)
           .then(() => {
             PlayerModule.play();
-            set({durationMs: PlayerModule.getDurationMs()});
+            const dur = PlayerModule.getDurationMs();
+            set({durationMs: dur});
+            setNowPlayingForTrack(track, dur);
             startSync(get);
             const s = get();
             preloadNextInQueue(s.queue, s.queueIndex, s.repeat, s.shuffle);
           })
           .catch(() => {
-            set({isPlaying: false});
-            stopSync();
+            const {queue: q} = get();
+            if (q.length > 1) {
+              get().next();
+            } else {
+              set({isPlaying: false});
+            }
           });
       }
     },
 
     pause: () => {
       PlayerModule.pause();
-      stopSync();
+      const pos = PlayerModule.getPositionMs();
+      PlayerModule.updateNowPlayingElapsed(pos / 1000, 0);
       set({isPlaying: false});
       persist();
     },
     resume: () => {
       PlayerModule.play();
+      const pos = PlayerModule.getPositionMs();
+      PlayerModule.updateNowPlayingElapsed(pos / 1000, 1);
       set({isPlaying: true});
       startSync(get);
     },
@@ -251,8 +321,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
           if (repeat === 'all') {
             nextIndex = 0;
           } else {
-            stopSync();
             set({isPlaying: false});
+            PlayerModule.updateNowPlayingElapsed(0, 0);
             persist();
             return;
           }
@@ -267,13 +337,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
           PlayerModule.loadTrack(track.filePath)
             .then(() => {
               PlayerModule.play();
-              set({durationMs: PlayerModule.getDurationMs()});
+              const dur = PlayerModule.getDurationMs();
+              set({durationMs: dur});
+              setNowPlayingForTrack(track, dur);
               startSync(get);
               preloadNextInQueue(queue, nextIndex, repeat, isShuffle);
             })
             .catch(() => {
-              set({isPlaying: false});
-              stopSync();
+              if (queue.length > 1 && nextIndex < queue.length - 1) {
+                get().next();
+              } else {
+                set({isPlaying: false});
+              }
             });
         }
       }
@@ -285,6 +360,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
       if (positionMs > 3000 || queueIndex === 0) {
         set({positionMs: 0});
+        PlayerModule.seekToFrame(0);
+        PlayerModule.updateNowPlayingElapsed(0, get().isPlaying ? 1 : 0);
         persist();
         return;
       }
@@ -299,7 +376,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
           PlayerModule.loadTrack(track.filePath)
             .then(() => {
               PlayerModule.play();
-              set({durationMs: PlayerModule.getDurationMs()});
+              const dur = PlayerModule.getDurationMs();
+              set({durationMs: dur});
+              setNowPlayingForTrack(track, dur);
               startSync(get);
               preloadNextInQueue(queue, prevIndex, r, sh);
             })
@@ -313,6 +392,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
     seekTo: (ms) => {
       PlayerModule.seekToFrame(ms);
+      PlayerModule.updateNowPlayingElapsed(ms / 1000, get().isPlaying ? 1 : 0);
       set({positionMs: ms});
       persist();
     },

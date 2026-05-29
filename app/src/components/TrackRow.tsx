@@ -42,6 +42,7 @@ export function TrackRow({
           hue={track.hue}
           size={coverSize}
           radius={5}
+          artworkPath={track.artworkPath}
         />
         {isCurrent && (
           <View style={styles.playingOverlay}>

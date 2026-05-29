@@ -1,10 +1,12 @@
-import React, {useEffect} from 'react';
-import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
-import {PageHeader, TrackRow, IconPlus, IconShuffle} from '../components';
+import React, {useCallback, useEffect} from 'react';
+import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {FlashList} from '@shopify/flash-list';
+import {PageHeader, TrackRow, IconPlus, IconShuffle, IconUpload} from '../components';
 import {useTheme, FONTS} from '../theme';
 import {useLibraryStore, usePlayerStore} from '../store';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {Track} from '../db';
 
 const SORT_TABS = [
   {key: 'title' as const, label: 'Title'},
@@ -36,10 +38,23 @@ export function SongsScreen() {
     navigation.navigate('NowPlaying');
   };
 
-  return (
-    <ScrollView
-      style={[styles.scroll, {backgroundColor: theme.paper}]}
-      contentContainerStyle={styles.content}>
+  const renderItem = useCallback(
+    ({item}: {item: Track}) => (
+      <TrackRow
+        key={item.id}
+        track={item}
+        isCurrent={currentTrack?.id === item.id}
+        onPress={() => {
+          play(item.id, trackIds);
+          navigation.navigate('NowPlaying');
+        }}
+      />
+    ),
+    [currentTrack?.id, play, trackIds, navigation],
+  );
+
+  const header = (
+    <>
       <PageHeader
         kicker={`${tracks.length} tracks · FLAC library`}
         title="Songs"
@@ -73,32 +88,60 @@ export function SongsScreen() {
             </Pressable>
           ))}
         </View>
-        <Pressable style={styles.shuffleBtn} onPress={handleShuffle}>
-          <IconShuffle size={14} color={theme.accent} />
-          <Text style={[styles.shuffleText, {color: theme.accent}]}>
-            SHUFFLE ALL
+        {tracks.length > 0 && (
+          <Pressable style={styles.shuffleBtn} onPress={handleShuffle}>
+            <IconShuffle size={14} color={theme.accent} />
+            <Text style={[styles.shuffleText, {color: theme.accent}]}>
+              SHUFFLE ALL
+            </Text>
+          </Pressable>
+        )}
+      </View>
+    </>
+  );
+
+  if (tracks.length === 0) {
+    return (
+      <View style={[styles.scroll, {backgroundColor: theme.paper}]}>
+        <View style={styles.content}>
+          {header}
+          <View style={styles.emptyState}>
+            <View style={[styles.emptyIcon, {backgroundColor: theme.card}]}>
+              <IconUpload size={28} color={theme.ink3} />
+            </View>
+            <Text style={[styles.emptyTitle, {color: theme.ink}]}>
+              Your library is empty
+            </Text>
+            <Text style={[styles.emptySub, {color: theme.ink3}]}>
+              Add FLAC files to start listening
+            </Text>
+            <Pressable
+              onPress={() => navigation.navigate('AddMusic')}
+              style={[styles.emptyBtn, {backgroundColor: theme.ink}]}>
+              <Text style={[styles.emptyBtnText, {color: theme.paper}]}>
+                ADD MUSIC
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.scroll, {backgroundColor: theme.paper}]}>
+      <FlashList
+        data={tracks}
+        renderItem={renderItem}
+        ListHeaderComponent={header}
+        ListFooterComponent={
+          <Text style={[styles.footer, {color: theme.ink4}]}>
+            — that's everything in the library —
           </Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.list}>
-        {tracks.map((track) => (
-          <TrackRow
-            key={track.id}
-            track={track}
-            isCurrent={currentTrack?.id === track.id}
-            onPress={() => {
-              play(track.id, trackIds);
-              navigation.navigate('NowPlaying');
-            }}
-          />
-        ))}
-      </View>
-
-      <Text style={[styles.footer, {color: theme.ink4}]}>
-        — that's everything in the library —
-      </Text>
-    </ScrollView>
+        }
+        contentContainerStyle={styles.listContent}
+      />
+    </View>
   );
 }
 
@@ -107,6 +150,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    paddingTop: 50,
+    paddingBottom: 180,
+  },
+  listContent: {
     paddingTop: 50,
     paddingBottom: 180,
   },
@@ -147,9 +194,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.5,
   },
-  list: {
-    marginTop: 8,
-  },
   footer: {
     textAlign: 'center',
     paddingVertical: 24,
@@ -157,5 +201,39 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.serif,
     fontStyle: 'italic',
     fontSize: 14,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontFamily: FONTS.serif,
+    fontStyle: 'italic',
+    fontSize: 22,
+  },
+  emptySub: {
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  emptyBtn: {
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  emptyBtnText: {
+    fontFamily: FONTS.mono,
+    fontSize: 11,
+    letterSpacing: 1.5,
   },
 });

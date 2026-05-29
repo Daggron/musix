@@ -79,6 +79,7 @@ export function PlaylistDetailScreen({navigation, route}: Props) {
                   hue={t.hue}
                   size={80}
                   radius={0}
+                  artworkPath={t.artworkPath}
                 />
               ))}
             </View>
@@ -88,6 +89,7 @@ export function PlaylistDetailScreen({navigation, route}: Props) {
               hue={tracks[0].hue}
               size={160}
               radius={8}
+              artworkPath={tracks[0].artworkPath}
             />
           ) : (
             <View
@@ -141,6 +143,7 @@ export function PlaylistDetailScreen({navigation, route}: Props) {
               hue={t.hue}
               size={36}
               radius={4}
+              artworkPath={t.artworkPath}
             />
             <View style={styles.trackInfo}>
               <Text

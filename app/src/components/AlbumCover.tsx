@@ -1,5 +1,5 @@
-import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import React, {useState} from 'react';
+import {Image, StyleSheet, Text, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {hueToGradient, FONTS} from '../theme';
 
@@ -8,6 +8,7 @@ interface Props {
   hue?: number;
   size?: number;
   radius?: number;
+  artworkPath?: string | null;
 }
 
 export function AlbumCover({
@@ -15,7 +16,20 @@ export function AlbumCover({
   hue = 30,
   size = 56,
   radius = 6,
+  artworkPath,
 }: Props) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  if (artworkPath && !imgFailed) {
+    return (
+      <Image
+        source={{uri: `file://${artworkPath}`}}
+        style={{width: size, height: size, borderRadius: radius}}
+        onError={() => setImgFailed(true)}
+      />
+    );
+  }
+
   const initials = albumName
     .split(' ')
     .filter((w) => w.length > 1)

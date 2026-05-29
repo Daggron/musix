@@ -3,38 +3,42 @@ import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {AlbumCover} from './AlbumCover';
 import {IconPlay, IconPause, IconNext} from './Icons';
 import {useTheme, FONTS} from '../theme';
-import type {Song} from '../data/mockData';
+import {usePlayerStore} from '../store';
 
-interface Props {
-  song: Song;
-  playing: boolean;
-  onToggle: () => void;
-  onNext: () => void;
-  onOpen: () => void;
-}
-
-export function MiniPlayer({song, playing, onToggle, onNext, onOpen}: Props) {
+export function MiniPlayer({onOpen}: {onOpen: () => void}) {
   const theme = useTheme();
+  const track = usePlayerStore((s) => s.currentTrack);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const pause = usePlayerStore((s) => s.pause);
+  const resume = usePlayerStore((s) => s.resume);
+  const next = usePlayerStore((s) => s.next);
+
+  if (!track) return null;
 
   return (
-    <Pressable onPress={onOpen} style={[styles.container, {backgroundColor: theme.card, borderColor: theme.ruleStrong}]}>
-      <AlbumCover albumName={song.al} hue={song.hue} size={44} radius={8} />
+    <Pressable
+      onPress={onOpen}
+      style={[
+        styles.container,
+        {backgroundColor: theme.card, borderColor: theme.ruleStrong},
+      ]}>
+      <AlbumCover albumName={track.album} hue={track.hue} size={44} radius={8} artworkPath={track.artworkPath} />
       <View style={styles.info}>
         <Text numberOfLines={1} style={[styles.title, {color: theme.ink}]}>
-          {song.t}
+          {track.title}
         </Text>
         <Text numberOfLines={1} style={[styles.artist, {color: theme.ink3}]}>
-          {song.ar}
+          {track.artist}
         </Text>
       </View>
       <Pressable
         onPress={(e) => {
           e.stopPropagation();
-          onToggle();
+          isPlaying ? pause() : resume();
         }}
         hitSlop={8}
         style={styles.btn}>
-        {playing ? (
+        {isPlaying ? (
           <IconPause size={20} color={theme.ink} />
         ) : (
           <IconPlay size={20} color={theme.ink} />
@@ -43,7 +47,7 @@ export function MiniPlayer({song, playing, onToggle, onNext, onOpen}: Props) {
       <Pressable
         onPress={(e) => {
           e.stopPropagation();
-          onNext();
+          next();
         }}
         hitSlop={8}
         style={styles.btn}>
