@@ -1,7 +1,9 @@
-import React from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import React, {useRef, useState, useCallback} from 'react';
+import {Pressable, StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent} from 'react-native';
+import Animated, {useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS} from 'react-native-reanimated';
 import {
   AlbumCover,
+  CassettePlayer,
   IconChevDown,
   IconCassette,
   IconDisc,
@@ -17,6 +19,7 @@ import {
   IconMore,
   FlacChip,
 } from '../components';
+import {VinylPlayer} from '../components/VinylPlayer';
 import {useTheme, FONTS} from '../theme';
 import {useThemeStore} from '../theme';
 import {usePlayerStore, usePlaylistStore, useEQStore} from '../store';
@@ -45,9 +48,80 @@ export function NowPlayingScreen({navigation}: Props) {
   const toggleShuffle = usePlayerStore((s) => s.toggleShuffle);
   const cycleRepeat = usePlayerStore((s) => s.cycleRepeat);
 
+  const seekTo = usePlayerStore((s) => s.seekTo);
+
   const liked = usePlaylistStore((s) => s.isLiked);
   const toggleLike = usePlaylistStore((s) => s.toggleLike);
   const eqPreset = useEQStore((s) => s.preset);
+
+  const trackWidthRef = useRef(0);
+  const [seekProgress, setSeekProgress] = useState<number | null>(null);
+
+  const onTrackLayout = useCallback((e: LayoutChangeEvent) => {
+    trackWidthRef.current = e.nativeEvent.layout.width;
+  }, []);
+
+  const clampSeek = useCallback((pageX: number, trackX: number) => {
+    const w = trackWidthRef.current;
+    if (w <= 0) return 0;
+    return Math.max(0, Math.min(1, (pageX - trackX) / w));
+  }, []);
+
+  const trackXRef = useRef(0);
+
+  const onSeekStart = useCallback((e: GestureResponderEvent) => {
+    trackXRef.current = e.nativeEvent.pageX - e.nativeEvent.locationX;
+    const p = clampSeek(e.nativeEvent.pageX, trackXRef.current);
+    setSeekProgress(p);
+    return true;
+  }, [clampSeek]);
+
+  const onSeekMove = useCallback((e: GestureResponderEvent) => {
+    const p = clampSeek(e.nativeEvent.pageX, trackXRef.current);
+    setSeekProgress(p);
+  }, [clampSeek]);
+
+  const onSeekEnd = useCallback((e: GestureResponderEvent) => {
+    const p = clampSeek(e.nativeEvent.pageX, trackXRef.current);
+    setSeekProgress(null);
+    const dur = usePlayerStore.getState().durationMs;
+    const trackDur = usePlayerStore.getState().currentTrack?.duration ?? 0;
+    const totalMs = dur > 0 ? dur : trackDur * 1000;
+    if (totalMs > 0) seekTo(p * totalMs);
+  }, [clampSeek, seekTo]);
+
+  const dismissY = useSharedValue(0);
+  const dismissStartY = useRef(0);
+  const isDismissing = useRef(false);
+
+  const goBack = useCallback(() => navigation.goBack(), [navigation]);
+
+  const dismissStyle = useAnimatedStyle(() => ({
+    transform: [{translateY: dismissY.value}],
+  }));
+
+  const onDismissGrant = useCallback((e: GestureResponderEvent) => {
+    dismissStartY.current = e.nativeEvent.pageY;
+    isDismissing.current = false;
+  }, []);
+
+  const onDismissMove = useCallback((e: GestureResponderEvent) => {
+    const dy = e.nativeEvent.pageY - dismissStartY.current;
+    if (dy > 0) {
+      dismissY.value = dy;
+      isDismissing.current = dy > 100;
+    }
+  }, [dismissY]);
+
+  const onDismissEnd = useCallback(() => {
+    if (isDismissing.current) {
+      dismissY.value = withTiming(800, {duration: 200}, () => {
+        runOnJS(goBack)();
+      });
+    } else {
+      dismissY.value = withSpring(0, {damping: 20, stiffness: 300});
+    }
+  }, [dismissY, goBack]);
 
   if (!track) {
     return (
@@ -72,7 +146,12 @@ export function NowPlayingScreen({navigation}: Props) {
   const isTrackLiked = liked(track.id);
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.paper}]}>
+    <Animated.View
+      style={[
+        styles.container,
+        {backgroundColor: theme.paper},
+        dismissStyle,
+      ]}>
       <View style={styles.topBar}>
         <Pressable onPress={() => navigation.goBack()} style={styles.btn}>
           <IconChevDown size={22} color={theme.ink} />
@@ -98,8 +177,35 @@ export function NowPlayingScreen({navigation}: Props) {
         </Pressable>
       </View>
 
-      <View style={styles.artwork}>
-        <AlbumCover albumName={track.album} hue={track.hue} size={300} radius={12} />
+      <View
+        style={styles.artwork}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderGrant={onDismissGrant}
+        onResponderMove={onDismissMove}
+        onResponderRelease={onDismissEnd}
+        onResponderTerminate={onDismissEnd}>
+        {playerKind === 'vinyl' ? (
+          <VinylPlayer
+            isPlaying={isPlaying}
+            progress={progress}
+            albumName={track.album}
+            artistName={track.artist}
+            hue={track.hue}
+            size={300}
+          />
+        ) : (
+          <CassettePlayer
+            isPlaying={isPlaying}
+            progress={progress}
+            trackTitle={track.title}
+            artistName={track.artist}
+            albumName={track.album}
+            hue={track.hue}
+            size={300}
+            durationSec={totalSec}
+          />
+        )}
       </View>
 
       <View style={styles.titleBlock}>
@@ -113,22 +219,32 @@ export function NowPlayingScreen({navigation}: Props) {
       </View>
 
       <View style={styles.progressSection}>
-        <View style={[styles.progressTrack, {backgroundColor: theme.ruleStrong}]}>
-          <View
-            style={[
-              styles.progressFill,
-              {backgroundColor: theme.accent, width: `${progress * 100}%`},
-            ]}
-          />
-          <View
-            style={[
-              styles.progressThumb,
-              {
-                backgroundColor: theme.accent,
-                left: `${progress * 100}%`,
-              },
-            ]}
-          />
+        <View
+          style={styles.progressHitArea}
+          onLayout={onTrackLayout}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={onSeekStart}
+          onResponderMove={onSeekMove}
+          onResponderRelease={onSeekEnd}
+          onResponderTerminate={() => setSeekProgress(null)}>
+          <View style={[styles.progressTrack, {backgroundColor: theme.ruleStrong}]}>
+            <View
+              style={[
+                styles.progressFill,
+                {backgroundColor: theme.accent, width: `${(seekProgress ?? progress) * 100}%`},
+              ]}
+            />
+            <View
+              style={[
+                styles.progressThumb,
+                {
+                  backgroundColor: theme.accent,
+                  left: `${(seekProgress ?? progress) * 100}%`,
+                },
+              ]}
+            />
+          </View>
         </View>
         <View style={styles.timeRow}>
           <Text style={[styles.time, {color: theme.ink3}]}>
@@ -187,7 +303,7 @@ export function NowPlayingScreen({navigation}: Props) {
           <IconMore size={20} color={theme.ink3} />
         </Pressable>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -257,6 +373,10 @@ const styles = StyleSheet.create({
   progressSection: {
     paddingHorizontal: 28,
     paddingTop: 18,
+  },
+  progressHitArea: {
+    paddingVertical: 14,
+    justifyContent: 'center',
   },
   progressTrack: {
     height: 3,
